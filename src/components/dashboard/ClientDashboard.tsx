@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function ClientDashboard() {
+  const navigate = useNavigate();
   const [shoppingLists] = useState([
     {
       id: 1,
@@ -105,7 +107,10 @@ export function ClientDashboard() {
           <Card className="border-0 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-bold">Minhas Listas</CardTitle>
-              <Button className="bg-gradient-primary hover:shadow-glow transition-all duration-300">
+              <Button 
+                onClick={() => navigate("/new-list")}
+                className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Lista
               </Button>
@@ -114,7 +119,8 @@ export function ClientDashboard() {
               {shoppingLists.map((list) => (
                 <div
                   key={list.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                  onClick={() => navigate(`/list/${list.id}`)}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
