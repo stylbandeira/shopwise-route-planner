@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShoppingCart, Building2, Shield, UserPlus } from "lucide-react";
 import { UserType } from "./LoginForm";
+import { useNavigate } from "react-router-dom";
 
 interface RegisterFormProps {
     onRegister: (userType: UserType) => void;
@@ -20,6 +21,7 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
     const [confirmPassword, setConfirmPassword] = useState("");
     const [userType, setUserType] = useState<UserType>("client");
     const [errors, setErrors] = useState<Record<string, string[]>>({});
+    const navigate = useNavigate();
 
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -47,8 +49,7 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
                 console.log(response.statusText);
             }
 
-            console.log(userType);
-            console.log("Cadastro realizado com sucesso:", response.data);
+            navigate("/email-confirmation");
 
         } catch (error: any) {
             if (error.response) {

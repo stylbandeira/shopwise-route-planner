@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import NewShoppingList from "./pages/NewShoppingList";
 import ViewShoppingList from "./pages/ViewShoppingList";
+import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/new-list" element={<NewShoppingList />} />
           <Route path="/list/:id" element={<ViewShoppingList />} />
+          <Route path="/email-confirmation" element={<EmailConfirmationScreen />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
