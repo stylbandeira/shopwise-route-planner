@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import NewShoppingList from "./pages/NewShoppingList";
 import ViewShoppingList from "./pages/ViewShoppingList";
 import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,8 @@ const App = () => (
           <Route path="/new-list" element={<NewShoppingList />} />
           <Route path="/list/:id" element={<ViewShoppingList />} />
           <Route path="/email-confirmation" element={<EmailConfirmationScreen />} />
+          <Route path="/verify-email/:id/:hash" element={<EmailVerificationPage />} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
