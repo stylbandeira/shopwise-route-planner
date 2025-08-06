@@ -35,7 +35,7 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
         registerUser(userType);
     };
 
-    const registerUser = async (userType) => {
+    const registerUser = async (userType: UserType) => {
         try {
             const response = await api.post("/register", {
                 name,
@@ -45,9 +45,13 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
                 user_type: userType,
             });
 
-            if (response.status !== 200) {
-                console.log(response.statusText);
-            }
+            console.log(response);
+
+            // onRegister({
+            //     type: userType,
+            //     name: response.data.user.name,
+            //     email: response.data.user.email
+            // });
 
             navigate("/email-confirmation");
 
