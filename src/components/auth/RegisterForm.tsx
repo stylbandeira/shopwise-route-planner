@@ -10,7 +10,13 @@ import { UserType } from "./LoginForm";
 import { useNavigate } from "react-router-dom";
 
 interface RegisterFormProps {
-    onRegister: (userType: UserType) => void;
+    onRegister: (userData: {
+        type: UserType;
+        name: string;
+        email: string;
+        token?: string;
+        points?: number;
+    }) => void;
     onSwitchToLogin: () => void;
 }
 
@@ -22,6 +28,7 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
     const [userType, setUserType] = useState<UserType>("client");
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
 
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -36,6 +43,7 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
     };
 
     const registerUser = async (userType: UserType) => {
+        setIsLoading(true);
         try {
             const response = await api.post("/register", {
                 name,
@@ -45,15 +53,15 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
                 user_type: userType,
             });
 
-            console.log(response);
+            localStorage.setItem('token', response.data.access_token);
 
-            // onRegister({
-            //     type: userType,
-            //     name: response.data.user.name,
-            //     email: response.data.user.email
-            // });
+            onRegister({
+                type: userType,
+                name: response.data.user.name,
+                email: response.data.user.email
+            });
 
-            navigate("/email-confirmation");
+            navigate("/", { state: { fromRegister: true } });
 
         } catch (error: any) {
             if (error.response) {
@@ -62,6 +70,8 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
             } else {
                 alert("Erro inesperado. Tente novamente.");
             }
+        } finally {
+            setIsLoading(false)
         }
     };
 
@@ -163,8 +173,12 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
                         />
                     </div>
 
-                    <Button type="submit" className="w-full bg-gradient-secondary hover:shadow-glow transition-all duration-300">
-                        Criar Conta
+                    <Button
+                        type="submit"
+                        className="w-full bg-gradient-secondary hover:shadow-glow transition-all duration-300"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Criando conta..." : "Criar Conta"}
                     </Button>
                 </form>
 
