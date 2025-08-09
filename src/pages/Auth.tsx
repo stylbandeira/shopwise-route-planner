@@ -2,12 +2,15 @@ import { useState } from "react";
 import { LoginForm, UserType } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
+// components/Auth.tsx
 interface AuthProps {
-  onLogin: (userType: UserType) => void;
+  onLogin: (userData: { type: UserType; name: string; email: string }) => void;
+  onRegister?: (userData: { type: UserType; name: string; email: string }) => void;
 }
 
-export default function Auth({ onLogin }: AuthProps) {
+export default function Auth({ onLogin, onRegister }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
+  const handleRegister = onRegister || onLogin;
 
   return (
     <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
@@ -19,7 +22,7 @@ export default function Auth({ onLogin }: AuthProps) {
           />
         ) : (
           <RegisterForm
-            onRegister={onLogin}
+            onRegister={handleRegister}
             onSwitchToLogin={() => setIsLogin(true)}
           />
         )}
