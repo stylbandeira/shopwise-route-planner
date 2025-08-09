@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UserType } from "@/components/auth/LoginForm";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { CompanyDashboard } from "@/components/dashboard/CompanyDashboard";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import Auth from "./Auth";
+import { useLocation } from "react-router-dom";
+import { NotificationToast } from "@/components/notification/NotificationToast";
+import api from "@/lib/api";
 
 const Index = () => {
   const [user, setUser] = useState<{
@@ -13,15 +16,47 @@ const Index = () => {
     points?: number;
   } | null>(null);
 
-  const handleLogin = (userType: UserType) => {
+  const [showNotification, setShowNotification] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      api.get('/user')
+        .then(response => {
+          setUser({
+            type: response.data.user_type,
+            name: response.data.name
+          });
+        })
+        .catch(() => {
+          localStorage.removeItem('authToken');
+        });
+    }
+
+    if (location.state?.fromRegister) {
+      setShowNotification(true);
+    }
+  }, [location]);
+
+  const handleLogin = (userData: { type: UserType; name: string; email?: string }) => {
     // Simular login com dados diferentes para cada tipo
-    const userData = {
-      client: { type: userType, name: "Maria Silva", points: 1247 },
-      company: { type: userType, name: "Supermercado ABC" },
-      admin: { type: userType, name: "Admin System" }
+    const userProfiles = {
+      client: { ...userData, points: 1247 },
+      company: userData,
+      admin: userData
     };
-    
-    setUser(userData[userType] as any);
+
+    setUser(userProfiles[userData.type]);
+  };
+
+  const handleRegister = (userData: {
+    type: UserType;
+    name: string;
+    email?: string;
+  }) => {
+    handleLogin(userData);
+    window.history.replaceState({ ...location.state, fromRegister: true }, "")
   };
 
   const handleLogout = () => {
@@ -46,7 +81,15 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background reative">
+
+      {showNotification && (
+        <NotificationToast
+          message="Enviamos um e-mail com o link de confirmação. Verifique sua caixa de entrada."
+          duration={8000}
+        />
+      )}
+
       <DashboardHeader
         userType={user.type}
         userName={user.name}
