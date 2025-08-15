@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
 export default function EmailVerificationPage() {
@@ -8,22 +8,71 @@ export default function EmailVerificationPage() {
 
     const [status, setStatus] = useState('loading'); // loading, success, error
 
+    const location = useLocation();
+    const navigate = useNavigate();
+
     useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const verifyUrl = queryParams.get('signed_url');
+
+        if (!verifyUrl) {
+            navigate('/');
+            return;
+        }
+
         const verifyEmail = async () => {
             try {
-                const response = await axios.get(
-                    `${import.meta.env.VITE_API_URL}/email/verify/${id}/${hash}?${searchParams.toString()}`
-                );
-                setStatus('success');
+                // Extrai o path da URL completa para enviar apenas ao backend
+                const url = new URL(verifyUrl);
+                const path = url.pathname + url.search;
 
-                console.log(response.config.url);
+                const response = await axios.get(url);
+
+                if (response.status === 200) {
+                    setStatus('success');
+                } else {
+                    setStatus('error');
+                }
+
+                console.log(url);
             } catch (error) {
                 setStatus('error');
             }
         };
 
         verifyEmail();
-    }, [id, hash, searchParams]);
+    }, [location, navigate]);
+
+    //APAGAR?
+    // useEffect(() => {
+    //     const signedUrl = searchParams.get('signed_url');
+
+    //     if (!signedUrl) {
+    //         setStatus('error');
+    //         return;
+    //     }
+
+    //     const decodedUrl = decodeURIComponent(signedUrl);
+    //     const fullApiUrl = `${import.meta.env.VITE_API_URL}${decodedUrl}`;
+
+    //     const verifyEmail = async () => {
+    //         try {
+    //             const response = await axios.get(fullApiUrl);
+    //             setStatus('success');
+
+    //             console.log('Verificação Ok', response.data);
+    //         } catch (error) {
+    //             setStatus('error');
+    //             console.log(error)
+    //         }
+    //     };
+
+    //     verifyEmail();
+
+    //     console.log(fullApiUrl)
+    //     console.log(fullApiUrl)
+
+    // }, [id, hash, searchParams]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center p-6">
