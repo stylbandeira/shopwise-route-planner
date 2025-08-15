@@ -23,7 +23,7 @@ const App = () => (
           <Route path="/new-list" element={<NewShoppingList />} />
           <Route path="/list/:id" element={<ViewShoppingList />} />
           <Route path="/email-verification" element={<EmailConfirmationScreen />} />
-          <Route path="/verify-email/:id/:hash" element={<EmailVerificationPage />} />
+          <Route path="/verify-email" element={<EmailVerificationPage />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
