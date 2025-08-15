@@ -3,8 +3,6 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import axios from 'axios';
 
 export default function EmailVerificationPage() {
-    const { id, hash } = useParams();
-    const [searchParams] = useSearchParams();
 
     const [status, setStatus] = useState('loading'); // loading, success, error
 
@@ -22,7 +20,7 @@ export default function EmailVerificationPage() {
 
         const verifyEmail = async () => {
             try {
-                // Extrai o path da URL completa para enviar apenas ao backend
+
                 const url = new URL(verifyUrl);
                 const path = url.pathname + url.search;
 
@@ -42,37 +40,6 @@ export default function EmailVerificationPage() {
 
         verifyEmail();
     }, [location, navigate]);
-
-    //APAGAR?
-    // useEffect(() => {
-    //     const signedUrl = searchParams.get('signed_url');
-
-    //     if (!signedUrl) {
-    //         setStatus('error');
-    //         return;
-    //     }
-
-    //     const decodedUrl = decodeURIComponent(signedUrl);
-    //     const fullApiUrl = `${import.meta.env.VITE_API_URL}${decodedUrl}`;
-
-    //     const verifyEmail = async () => {
-    //         try {
-    //             const response = await axios.get(fullApiUrl);
-    //             setStatus('success');
-
-    //             console.log('Verificação Ok', response.data);
-    //         } catch (error) {
-    //             setStatus('error');
-    //             console.log(error)
-    //         }
-    //     };
-
-    //     verifyEmail();
-
-    //     console.log(fullApiUrl)
-    //     console.log(fullApiUrl)
-
-    // }, [id, hash, searchParams]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center p-6">
