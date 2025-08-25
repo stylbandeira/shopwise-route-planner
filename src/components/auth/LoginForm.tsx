@@ -45,7 +45,7 @@ export function LoginForm({ onLogin, onSwitchToRegister }: LoginFormProps) {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       onLogin({
-        type: userType,
+        type: response.data.type || userType,
         name: response.data.user.name,
         email: response.data.user.email,
         token: response.data.token
