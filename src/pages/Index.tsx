@@ -9,45 +9,65 @@ import { useLocation } from "react-router-dom";
 import { NotificationToast } from "@/components/notification/NotificationToast";
 import api from "@/lib/api";
 
+interface AppUser {
+  type: UserType;
+  name: string;
+  email?: string;
+  points?: number;
+}
+
 const Index = () => {
-  const [user, setUser] = useState<{
-    type: UserType;
-    name: string;
-    points?: number;
-  } | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  // const [user, setUser] = useState();
+  const [loading, setLoading] = useState(true);
 
   const [showNotification, setShowNotification] = useState(false);
   const location = useLocation();
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      api.get('/user')
-        .then(response => {
-          setUser({
-            type: response.data.user_type,
-            name: response.data.name
-          });
-        })
-        .catch(() => {
-          localStorage.removeItem('authToken');
-        });
+  const loadUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false)
+        return;
+      }
+
+      const response = await api.get('/user');
+      setUser({
+        type: response.data.user.type,
+        name: response.data.user.name,
+        email: response.data.user.email,
+        // points: response.data.user.points
+      });
+
+    } catch (error) {
+      console.error('Failed to load user', error);
+      localStorage.removeItem('token');
+      setUser(null)
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    loadUser();
 
     if (location.state?.fromRegister) {
       setShowNotification(true);
     }
   }, [location]);
 
-  const handleLogin = (userData: { type: UserType; name: string; email?: string }) => {
-    // Simular login com dados diferentes para cada tipo
-    const userProfiles = {
-      client: { ...userData, points: 1247 },
-      company: userData,
-      admin: userData
-    };
-
-    setUser(userProfiles[userData.type]);
+  const handleLogin = (userData: { type: UserType; name: string; email?: string; token?: string }) => {
+    if (userData.token) {
+      localStorage.setItem('token', userData.token);
+    }
+    setUser({
+      type: userData.type,
+      name: userData.name,
+      email: userData.email,
+      // points: userData.points
+    });
+    return loadUser();
   };
 
   const handleRegister = (userData: {
@@ -55,8 +75,8 @@ const Index = () => {
     name: string;
     email?: string;
   }) => {
-    handleLogin(userData);
-    window.history.replaceState({ ...location.state, fromRegister: true }, "")
+    window.history.replaceState({ ...location.state, fromRegister: true }, "");
+    return loadUser()
   };
 
   const handleLogout = () => {
