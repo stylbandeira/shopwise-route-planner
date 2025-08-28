@@ -1,34 +1,74 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, Package, TrendingUp, Star, MapPin, BarChart3 } from "lucide-react";
+import { Users, Building2, Package, TrendingUp, Star, MapPin, BarChart3, Loader2 } from "lucide-react";
+import api from "@/lib/api";
+
+interface DashBoardData {
+  systemStats: {
+    totalUsers: number,
+    totalCompanies: number,
+    totalProducts: number,
+    systemHealth: number,
+  };
+
+  topUsers: Array<{
+    id: number;
+    name: string;
+    points: number;
+    reputation: number;
+  }>;
+  topProducts: Array<{
+    id: number;
+    name: string;
+    registrations: number;
+  }>;
+  topStores: Array<{
+    id: number;
+    name: string;
+    mentions: number;
+  }>;
+}
 
 export function AdminDashboard() {
-  const [systemStats] = useState({
-    totalUsers: 15420,
-    totalCompanies: 89,
-    totalProducts: 45678,
-    systemHealth: 99.8
-  });
+  const [data, setData] = useState<DashBoardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [topUsers] = useState([
-    { id: 1, name: "Maria Silva", points: 2480, reputation: 4.8 },
-    { id: 2, name: "João Santos", points: 2350, reputation: 4.7 },
-    { id: 3, name: "Ana Costa", points: 2190, reputation: 4.9 }
-  ]);
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/admin/dashboard');
+      setData(response.data);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Erro ao carregar dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const [topProducts] = useState([
-    { id: 1, name: "Arroz Tio João 5kg", registrations: 1240 },
-    { id: 2, name: "Feijão Carioca 1kg", registrations: 980 },
-    { id: 3, name: "Açúcar Cristal 1kg", registrations: 856 }
-  ]);
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const [topStores] = useState([
-    { id: 1, name: "Supermercado ABC", mentions: 2450 },
-    { id: 2, name: "Mercado Central", mentions: 1890 },
-    { id: 3, name: "Extra Hipermercado", mentions: 1650 }
-  ]);
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -41,7 +81,7 @@ export function AdminDashboard() {
                 <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{systemStats.totalUsers.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{data.systemStats.totalUsers.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Usuários Ativos</p>
               </div>
             </div>
@@ -55,7 +95,7 @@ export function AdminDashboard() {
                 <Building2 className="w-6 h-6 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{systemStats.totalCompanies}</p>
+                <p className="text-2xl font-bold">{data.systemStats.totalCompanies}</p>
                 <p className="text-sm text-muted-foreground">Empresas</p>
               </div>
             </div>
@@ -69,7 +109,7 @@ export function AdminDashboard() {
                 <Package className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{systemStats.totalProducts.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{data.systemStats.totalProducts.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Produtos</p>
               </div>
             </div>
@@ -83,7 +123,7 @@ export function AdminDashboard() {
                 <TrendingUp className="w-6 h-6 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{systemStats.systemHealth}%</p>
+                <p className="text-2xl font-bold">{data.systemStats.systemHealth}%</p>
                 <p className="text-sm text-muted-foreground">Saúde do Sistema</p>
               </div>
             </div>
@@ -103,7 +143,7 @@ export function AdminDashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {topProducts.map((product, index) => (
+              {data.topProducts.map((product, index) => (
                 <div
                   key={product.id}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
@@ -130,7 +170,7 @@ export function AdminDashboard() {
               <CardTitle className="text-xl font-bold">Estabelecimentos Mais Citados</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {topStores.map((store, index) => (
+              {data.topStores.map((store, index) => (
                 <div
                   key={store.id}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
@@ -160,7 +200,7 @@ export function AdminDashboard() {
               <CardTitle>Usuários com Maior Reputação</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {topUsers.map((user, index) => (
+              {data.topUsers.map((user, index) => (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
