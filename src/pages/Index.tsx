@@ -18,7 +18,6 @@ interface AppUser {
 
 const Index = () => {
   const [user, setUser] = useState<AppUser | null>(null);
-  // const [user, setUser] = useState();
   const [loading, setLoading] = useState(true);
 
   const [showNotification, setShowNotification] = useState(false);
@@ -37,7 +36,7 @@ const Index = () => {
         type: response.data.user.type,
         name: response.data.user.name,
         email: response.data.user.email,
-        // points: response.data.user.points
+        points: response.data.user.points
       });
 
     } catch (error) {
@@ -54,6 +53,7 @@ const Index = () => {
 
     if (location.state?.fromRegister) {
       setShowNotification(true);
+      window.history.replaceState({}, "");
     }
   }, [location]);
 
