@@ -32,13 +32,11 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
 
 
     const handleSubmit = (e: React.FormEvent) => {
-        console.log('Entrou')
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("As senhas não coincidem!");
             return;
         }
-        console.log('Entrou')
         registerUser(userType);
     };
 
@@ -66,7 +64,6 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
         } catch (error: any) {
             if (error.response) {
                 setErrors(error.response.data.errors || {});
-                console.log(error.response.data.errors)
             } else {
                 alert("Erro inesperado. Tente novamente.");
             }
