@@ -24,7 +24,7 @@ export default function EmailVerificationPage() {
                 const url = new URL(verifyUrl);
                 const path = url.pathname + url.search;
 
-                const response = await axios.get(url);
+                const response = await axios.get(verifyUrl);
 
                 if (response.status === 200) {
                     setStatus('success');
