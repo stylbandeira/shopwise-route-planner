@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Building2, Package, TrendingUp, Star, MapPin, BarChart3, Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { useNavigate } from "react-router-dom";
 
 interface DashBoardData {
   systemStats: {
@@ -35,6 +36,7 @@ export function AdminDashboard() {
   const [data, setData] = useState<DashBoardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchDashboardData = async () => {
     try {
@@ -239,6 +241,7 @@ export function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={() => navigate('/admin/companies')}
               >
                 <Building2 className="w-5 h-5" />
                 Gerenciar Empresas

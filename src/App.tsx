@@ -9,6 +9,7 @@ import NewShoppingList from "./pages/NewShoppingList";
 import ViewShoppingList from "./pages/ViewShoppingList";
 import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
+import ManageCompanies from "./pages/admin/ManageCompanies";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,9 @@ const App = () => (
           <Route path="/list/:id" element={<ViewShoppingList />} />
           <Route path="/email-verification" element={<EmailConfirmationScreen />} />
           <Route path="/verify-email" element={<EmailVerificationPage />} />
+
+          {/* ROTAS DE ADMIN */}
+          <Route path="/admin/companies" element={<ManageCompanies />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
