@@ -16,65 +16,13 @@ const Index = () => {
   const [showNotification, setShowNotification] = useState(false);
   const location = useLocation();
 
-  // const loadUser = async () => {
-  //   try {
-  //     const token = localStorage.getItem('token');
-  //     if (!token) {
-  //       setLoading(false)
-  //       return;
-  //     }
-
-  //     const response = await api.get('/user');
-  //     setUser({
-  //       type: response.data.user.type,
-  //       name: response.data.user.name,
-  //       email: response.data.user.email,
-  //       points: response.data.user.points
-  //     });
-
-  //   } catch (error) {
-  //     console.error('Failed to load user', error);
-  //     localStorage.removeItem('token');
-  //     setUser(null)
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
   useEffect(() => {
-    // loadUser();
 
     if (location.state?.fromRegister) {
       setShowNotification(true);
       window.history.replaceState({}, "");
     }
   }, [location]);
-
-  // const handleLogin = (userData: { type: UserType; name: string; email?: string; token?: string }) => {
-  //   if (userData.token) {
-  //     localStorage.setItem('token', userData.token);
-  //   }
-  //   setUser({
-  //     type: userData.type,
-  //     name: userData.name,
-  //     email: userData.email,
-  //     // points: userData.points
-  //   });
-  //   return loadUser();
-  // };
-
-  // const handleRegister = (userData: {
-  //   type: UserType;
-  //   name: string;
-  //   email?: string;
-  // }) => {
-  //   window.history.replaceState({ ...location.state, fromRegister: true }, "");
-  //   return loadUser()
-  // };
-
-  // const handleLogout = () => {
-  //   setUser(null);
-  // };
 
   if (loading) {
     return (
