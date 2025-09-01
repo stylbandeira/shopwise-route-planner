@@ -234,6 +234,7 @@ export function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={() => window.location.href = '/admin/users'}
               >
                 <Users className="w-5 h-5" />
                 Gerenciar Usuários
@@ -249,6 +250,7 @@ export function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={() => window.location.href = '/admin/products'}
               >
                 <Package className="w-5 h-5" />
                 Gerenciar Produtos
@@ -256,6 +258,7 @@ export function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={() => window.location.href = '/admin/reports'}
               >
                 <BarChart3 className="w-5 h-5" />
                 Relatórios Avançados

@@ -25,6 +25,7 @@ const App = () => (
           <Route path="/list/:id" element={<ViewShoppingList />} />
           <Route path="/email-verification" element={<EmailConfirmationScreen />} />
           <Route path="/verify-email" element={<EmailVerificationPage />} />
+          <Route path="/admin/companies" element={<ManageCompanies />} />
 
           {/* ROTAS DE ADMIN */}
           <Route path="/admin/companies" element={<ManageCompanies />} />
