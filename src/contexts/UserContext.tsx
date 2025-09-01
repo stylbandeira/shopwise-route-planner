@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserType } from '@/components/auth/LoginForm';
 import api from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
     type: UserType;
@@ -23,6 +24,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     // Carrega o usuário do localStorage/token ao iniciar
     const loadUser = async () => {
@@ -62,6 +64,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         localStorage.removeItem('token');
         setUser(null);
+        navigate('/');
     };
 
     return (
