@@ -10,6 +10,7 @@ import ViewShoppingList from "./pages/ViewShoppingList";
 import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import ManageCompanies from "./pages/admin/ManageCompanies";
+import { UserProvider } from "./contexts/UserContext";
 
 const queryClient = new QueryClient();
 
@@ -19,20 +20,22 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/new-list" element={<NewShoppingList />} />
-          <Route path="/list/:id" element={<ViewShoppingList />} />
-          <Route path="/email-verification" element={<EmailConfirmationScreen />} />
-          <Route path="/verify-email" element={<EmailVerificationPage />} />
-          <Route path="/admin/companies" element={<ManageCompanies />} />
+        <UserProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/new-list" element={<NewShoppingList />} />
+            <Route path="/list/:id" element={<ViewShoppingList />} />
+            <Route path="/email-verification" element={<EmailConfirmationScreen />} />
+            <Route path="/verify-email" element={<EmailVerificationPage />} />
+            <Route path="/admin/companies" element={<ManageCompanies />} />
 
-          {/* ROTAS DE ADMIN */}
-          <Route path="/admin/companies" element={<ManageCompanies />} />
+            {/* ROTAS DE ADMIN */}
+            <Route path="/admin/companies" element={<ManageCompanies />} />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </UserProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

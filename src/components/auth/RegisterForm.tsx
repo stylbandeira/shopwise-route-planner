@@ -8,19 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, Building2, Shield, UserPlus } from "lucide-react";
 import { UserType } from "./LoginForm";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext"; // Importe o hook
 
 interface RegisterFormProps {
-    onRegister: (userData: {
-        type: UserType;
-        name: string;
-        email: string;
-        token?: string;
-        points?: number;
-    }) => void;
     onSwitchToLogin: () => void;
 }
 
-export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps) {
+export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -30,6 +24,8 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
+    // Use o hook do contexto
+    const { login } = useUser();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,10 +49,12 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
 
             localStorage.setItem('token', response.data.access_token);
 
-            onRegister({
+            // Use a função login do contexto em vez de onRegister
+            login(response.data.access_token, {
                 type: userType,
                 name: response.data.user.name,
-                email: response.data.user.email
+                email: response.data.user.email,
+                points: response.data.user.points || 0
             });
 
             navigate("/", { state: { fromRegister: true } });
@@ -71,7 +69,6 @@ export function RegisterForm({ onRegister, onSwitchToLogin }: RegisterFormProps)
             setIsLoading(false)
         }
     };
-
 
     const getUserTypeIcon = (type: UserType) => {
         switch (type) {

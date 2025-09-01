@@ -8,48 +8,41 @@ import Auth from "./Auth";
 import { useLocation } from "react-router-dom";
 import { NotificationToast } from "@/components/notification/NotificationToast";
 import api from "@/lib/api";
-
-interface AppUser {
-  type: UserType;
-  name: string;
-  email?: string;
-  points?: number;
-}
+import { useUser } from "@/contexts/UserContext";
 
 const Index = () => {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useUser();
 
   const [showNotification, setShowNotification] = useState(false);
   const location = useLocation();
 
-  const loadUser = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false)
-        return;
-      }
+  // const loadUser = async () => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     if (!token) {
+  //       setLoading(false)
+  //       return;
+  //     }
 
-      const response = await api.get('/user');
-      setUser({
-        type: response.data.user.type,
-        name: response.data.user.name,
-        email: response.data.user.email,
-        points: response.data.user.points
-      });
+  //     const response = await api.get('/user');
+  //     setUser({
+  //       type: response.data.user.type,
+  //       name: response.data.user.name,
+  //       email: response.data.user.email,
+  //       points: response.data.user.points
+  //     });
 
-    } catch (error) {
-      console.error('Failed to load user', error);
-      localStorage.removeItem('token');
-      setUser(null)
-    } finally {
-      setLoading(false);
-    }
-  }
+  //   } catch (error) {
+  //     console.error('Failed to load user', error);
+  //     localStorage.removeItem('token');
+  //     setUser(null)
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   useEffect(() => {
-    loadUser();
+    // loadUser();
 
     if (location.state?.fromRegister) {
       setShowNotification(true);
@@ -57,34 +50,42 @@ const Index = () => {
     }
   }, [location]);
 
-  const handleLogin = (userData: { type: UserType; name: string; email?: string; token?: string }) => {
-    if (userData.token) {
-      localStorage.setItem('token', userData.token);
-    }
-    setUser({
-      type: userData.type,
-      name: userData.name,
-      email: userData.email,
-      // points: userData.points
-    });
-    return loadUser();
-  };
+  // const handleLogin = (userData: { type: UserType; name: string; email?: string; token?: string }) => {
+  //   if (userData.token) {
+  //     localStorage.setItem('token', userData.token);
+  //   }
+  //   setUser({
+  //     type: userData.type,
+  //     name: userData.name,
+  //     email: userData.email,
+  //     // points: userData.points
+  //   });
+  //   return loadUser();
+  // };
 
-  const handleRegister = (userData: {
-    type: UserType;
-    name: string;
-    email?: string;
-  }) => {
-    window.history.replaceState({ ...location.state, fromRegister: true }, "");
-    return loadUser()
-  };
+  // const handleRegister = (userData: {
+  //   type: UserType;
+  //   name: string;
+  //   email?: string;
+  // }) => {
+  //   window.history.replaceState({ ...location.state, fromRegister: true }, "");
+  //   return loadUser()
+  // };
 
-  const handleLogout = () => {
-    setUser(null);
-  };
+  // const handleLogout = () => {
+  //   setUser(null);
+  // };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!user) {
-    return <Auth onLogin={handleLogin} />;
+    return <Auth />;
   }
 
   const renderDashboard = () => {
@@ -114,7 +115,7 @@ const Index = () => {
         userType={user.type}
         userName={user.name}
         userPoints={user.points}
-        onLogout={handleLogout}
+        onLogout={logout}
       />
       {renderDashboard()}
     </div>
