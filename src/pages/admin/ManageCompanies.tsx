@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Building2, Search, Edit3, Trash2, Plus, ArrowLeft, Globe, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface Company {
     id: number;
@@ -125,141 +126,143 @@ export default function ManageCompanies() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate('/')}
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
-                        <p className="text-muted-foreground">
-                            Gerencie todas as empresas cadastradas na plataforma
-                        </p>
-                    </div>
-                </div>
-                <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Empresa
-                </Button>
-            </div>
-
-            {/* Filtros */}
-            <Card className="border-0 shadow-soft">
-                <CardContent className="p-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Buscar por nome, email ou CNPJ..."
-                                className="pl-10"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
+        <DashboardLayout>
+            <div className="container mx-auto px-4 py-6 space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate('/')}
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
+                            <p className="text-muted-foreground">
+                                Gerencie todas as empresas cadastradas na plataforma
+                            </p>
                         </div>
-                        <Select value={filterPlan} onValueChange={setFilterPlan}>
-                            <SelectTrigger className="w-full sm:w-48">
-                                <SelectValue placeholder="Plano" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os planos</SelectItem>
-                                <SelectItem value="basic">Básico</SelectItem>
-                                <SelectItem value="premium">Premium</SelectItem>
-                                <SelectItem value="enterprise">Enterprise</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={filterStatus} onValueChange={setFilterStatus}>
-                            <SelectTrigger className="w-full sm:w-48">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os status</SelectItem>
-                                <SelectItem value="active">Ativo</SelectItem>
-                                <SelectItem value="inactive">Inativo</SelectItem>
-                                <SelectItem value="pending">Pendente</SelectItem>
-                            </SelectContent>
-                        </Select>
                     </div>
-                </CardContent>
-            </Card>
+                    <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Nova Empresa
+                    </Button>
+                </div>
 
-            {/* Tabela de Empresas */}
-            <Card className="border-0 shadow-soft">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building2 className="w-5 h-5" />
-                        Empresas ({filteredCompanies.length})
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Empresa</TableHead>
-                                <TableHead>CNPJ</TableHead>
-                                <TableHead>Produtos</TableHead>
-                                <TableHead>Plano</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Cadastro</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredCompanies.map((company) => (
-                                <TableRow key={company.id}>
-                                    <TableCell>
-                                        <div>
-                                            <p className="font-medium">{company.name}</p>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <span>{company.email}</span>
-                                                {company.website && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <Globe className="w-3 h-3" />
-                                                        <span>Site</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                            <div className="flex items-start gap-1 text-xs text-muted-foreground mt-1">
-                                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                                <span>{company.address}</span>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                                            {company.cnpj}
-                                        </code>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className="font-medium">{company.productsCount.toLocaleString()}</span>
-                                    </TableCell>
-                                    <TableCell>{getPlanBadge(company.plan)}</TableCell>
-                                    <TableCell>{getStatusBadge(company.status)}</TableCell>
-                                    <TableCell>
-                                        {new Date(company.createdAt).toLocaleDateString('pt-BR')}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon">
-                                                <Edit3 className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon">
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
+                {/* Filtros */}
+                <Card className="border-0 shadow-soft">
+                    <CardContent className="p-6">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Buscar por nome, email ou CNPJ..."
+                                    className="pl-10"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+                            <Select value={filterPlan} onValueChange={setFilterPlan}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="Plano" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os planos</SelectItem>
+                                    <SelectItem value="basic">Básico</SelectItem>
+                                    <SelectItem value="premium">Premium</SelectItem>
+                                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os status</SelectItem>
+                                    <SelectItem value="active">Ativo</SelectItem>
+                                    <SelectItem value="inactive">Inativo</SelectItem>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Tabela de Empresas */}
+                <Card className="border-0 shadow-soft">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Building2 className="w-5 h-5" />
+                            Empresas ({filteredCompanies.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Empresa</TableHead>
+                                    <TableHead>CNPJ</TableHead>
+                                    <TableHead>Produtos</TableHead>
+                                    <TableHead>Plano</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Cadastro</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredCompanies.map((company) => (
+                                    <TableRow key={company.id}>
+                                        <TableCell>
+                                            <div>
+                                                <p className="font-medium">{company.name}</p>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <span>{company.email}</span>
+                                                    {company.website && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <Globe className="w-3 h-3" />
+                                                            <span>Site</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-start gap-1 text-xs text-muted-foreground mt-1">
+                                                    <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                                    <span>{company.address}</span>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                                                {company.cnpj}
+                                            </code>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-medium">{company.productsCount.toLocaleString()}</span>
+                                        </TableCell>
+                                        <TableCell>{getPlanBadge(company.plan)}</TableCell>
+                                        <TableCell>{getStatusBadge(company.status)}</TableCell>
+                                        <TableCell>
+                                            {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon">
+                                                    <Edit3 className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+        </DashboardLayout>
     );
 }

@@ -9,6 +9,7 @@ import { useLocation } from "react-router-dom";
 import { NotificationToast } from "@/components/notification/NotificationToast";
 import api from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 const Index = () => {
   const { user, loading, logout } = useUser();
@@ -50,8 +51,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background reative">
-
+    <DashboardLayout>
       {showNotification && (
         <NotificationToast
           message="Enviamos um e-mail com o link de confirmação. Verifique sua caixa de entrada."
@@ -59,14 +59,8 @@ const Index = () => {
         />
       )}
 
-      <DashboardHeader
-        userType={user.type}
-        userName={user.name}
-        userPoints={user.points}
-        onLogout={logout}
-      />
       {renderDashboard()}
-    </div>
+    </DashboardLayout>
   );
 };
 
