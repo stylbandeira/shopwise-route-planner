@@ -145,7 +145,9 @@ export default function ManageCompanies() {
                             </p>
                         </div>
                     </div>
-                    <Button>
+                    <Button
+                        onClick={() => navigate('/admin/companies/new')}
+                    >
                         <Plus className="w-4 h-4 mr-2" />
                         Nova Empresa
                     </Button>
@@ -248,7 +250,7 @@ export default function ManageCompanies() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/companies/edit/${company.id}`)}>
                                                     <Edit3 className="w-4 h-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon">

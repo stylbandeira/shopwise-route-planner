@@ -11,6 +11,8 @@ import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import ManageCompanies from "./pages/admin/ManageCompanies";
 import { UserProvider } from "./contexts/UserContext";
+import AddCompany from "./pages/admin/AddCompany";
+import EditCompany from "./pages/admin/EditCompany";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
 
             {/* ROTAS DE ADMIN */}
             <Route path="/admin/companies" element={<ManageCompanies />} />
+            <Route path="/admin/companies/new" element={<AddCompany />} />
+            <Route path="/admin/companies/edit/:id" element={<EditCompany />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
