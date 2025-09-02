@@ -17,11 +17,11 @@ interface Company {
     cnpj: string;
     website?: string;
     address: string;
-    productsCount: number;
+    total_products: number;
     webhookUrl?: string;
     plan: 'basic' | 'premium' | 'enterprise';
     status: 'active' | 'inactive' | 'pending';
-    createdAt: string;
+    created_at: string;
 }
 
 export default function ManageCompanies() {
@@ -39,33 +39,9 @@ export default function ManageCompanies() {
     const fetchCompanies = async () => {
         try {
             setLoading(true);
-            // Mock data for now
-            setCompanies([
-                {
-                    id: 1,
-                    name: "Supermercado Extra",
-                    email: "contato@extra.com",
-                    cnpj: "12.345.678/0001-90",
-                    website: "https://extra.com.br",
-                    address: "Av. Paulista, 1000 - São Paulo, SP",
-                    productsCount: 2500,
-                    webhookUrl: "https://api.extra.com.br/webhook",
-                    plan: "premium",
-                    status: "active",
-                    createdAt: "2024-02-01"
-                },
-                {
-                    id: 2,
-                    name: "Mercado São José",
-                    email: "contato@mercadosj.com",
-                    cnpj: "98.765.432/0001-10",
-                    address: "Rua das Flores, 123 - Rio de Janeiro, RJ",
-                    productsCount: 850,
-                    plan: "basic",
-                    status: "active",
-                    createdAt: "2024-01-20"
-                }
-            ]);
+            const response = await api.get("/admin/companies?currentPage=1");
+
+            setCompanies(response.data.data);
         } catch (error) {
             console.error('Erro ao carregar empresas:', error);
         } finally {
@@ -241,12 +217,12 @@ export default function ManageCompanies() {
                                             </code>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="font-medium">{company.productsCount.toLocaleString()}</span>
+                                            <span className="font-medium">{company.total_products.toLocaleString()}</span>
                                         </TableCell>
                                         <TableCell>{getPlanBadge(company.plan)}</TableCell>
                                         <TableCell>{getStatusBadge(company.status)}</TableCell>
                                         <TableCell>
-                                            {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                            {new Date(company.created_at).toLocaleDateString('pt-BR')}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
