@@ -19,7 +19,6 @@ interface Company {
     address: string;
     total_products: number;
     webhookUrl?: string;
-    plan: 'basic' | 'premium' | 'enterprise';
     status: 'active' | 'inactive' | 'pending';
     created_at: string;
 }
@@ -29,7 +28,6 @@ export default function ManageCompanies() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [filterPlan, setFilterPlan] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
 
     useEffect(() => {
@@ -53,34 +51,10 @@ export default function ManageCompanies() {
         const matchesSearch = company.name.toLowerCase().includes(search.toLowerCase()) ||
             company.email.toLowerCase().includes(search.toLowerCase()) ||
             company.cnpj.includes(search);
-        const matchesPlan = filterPlan === "all" || company.plan === filterPlan;
         const matchesStatus = filterStatus === "all" || company.status === filterStatus;
 
-        return matchesSearch && matchesPlan && matchesStatus;
+        return matchesSearch && matchesStatus;
     });
-
-    const getPlanLabel = (plan: string) => {
-        const labels = {
-            'basic': 'Básico',
-            'premium': 'Premium',
-            'enterprise': 'Enterprise'
-        };
-        return labels[plan as keyof typeof labels] || plan;
-    };
-
-    const getPlanBadge = (plan: string) => {
-        const variants = {
-            'basic': 'secondary',
-            'premium': 'default',
-            'enterprise': 'destructive'
-        };
-
-        return (
-            <Badge variant={variants[plan as keyof typeof variants] as any}>
-                {getPlanLabel(plan)}
-            </Badge>
-        );
-    };
 
     const getStatusBadge = (status: string) => {
         const variants = {
@@ -142,17 +116,6 @@ export default function ManageCompanies() {
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
-                            <Select value={filterPlan} onValueChange={setFilterPlan}>
-                                <SelectTrigger className="w-full sm:w-48">
-                                    <SelectValue placeholder="Plano" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos os planos</SelectItem>
-                                    <SelectItem value="basic">Básico</SelectItem>
-                                    <SelectItem value="premium">Premium</SelectItem>
-                                    <SelectItem value="enterprise">Enterprise</SelectItem>
-                                </SelectContent>
-                            </Select>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
                                 <SelectTrigger className="w-full sm:w-48">
                                     <SelectValue placeholder="Status" />
@@ -183,7 +146,6 @@ export default function ManageCompanies() {
                                     <TableHead>Empresa</TableHead>
                                     <TableHead>CNPJ</TableHead>
                                     <TableHead>Produtos</TableHead>
-                                    <TableHead>Plano</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Cadastro</TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
@@ -219,7 +181,6 @@ export default function ManageCompanies() {
                                         <TableCell>
                                             <span className="font-medium">{company.total_products.toLocaleString()}</span>
                                         </TableCell>
-                                        <TableCell>{getPlanBadge(company.plan)}</TableCell>
                                         <TableCell>{getStatusBadge(company.status)}</TableCell>
                                         <TableCell>
                                             {new Date(company.created_at).toLocaleDateString('pt-BR')}
