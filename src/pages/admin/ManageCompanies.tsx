@@ -190,7 +190,7 @@ export default function ManageCompanies() {
                                                 <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/companies/edit/${company.id}`)}>
                                                     <Edit3 className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="ghost" size="icon" >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
