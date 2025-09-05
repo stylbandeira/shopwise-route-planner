@@ -9,6 +9,7 @@ import { Building2, Search, Edit3, Trash2, Plus, ArrowLeft, Globe, MapPin } from
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
 interface Company {
     id: number;
@@ -29,22 +30,57 @@ export default function ManageCompanies() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [paginationMeta, setPaginationMeta] = useState<any>(null);
+    const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         fetchCompanies();
     }, []);
 
-    const fetchCompanies = async () => {
+    useEffect(() => {
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        const timeout = setTimeout(() => {
+            fetchCompanies(1, search, filterStatus);
+        }, 500);
+
+        setSearchTimeout(timeout);
+
+        return () => {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+        };
+    }, [search, filterStatus]);
+
+    useEffect(() => {
+        fetchCompanies(1, search, filterStatus);
+    }, [filterStatus]);
+
+    const fetchCompanies = async (page: number = 1, searchTerm: string = search, status: string = filterStatus) => {
         try {
             setLoading(true);
-            const response = await api.get("/admin/companies?currentPage=1");
+            const params: any = { page };
+
+            if (searchTerm) params.search = searchTerm;
+            if (status !== "all") params.status = status;
+
+            const response = await api.get("/admin/companies", { params });
 
             setCompanies(response.data.data);
+            setPaginationMeta(response.data.meta);
         } catch (error) {
             console.error('Erro ao carregar empresas:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePageChange = (page: number, searchTerm: string, status: string) => {
+        fetchCompanies(page, searchTerm, status);
+        window.scrollTo(0, 0);
     };
 
     const filteredCompanies = companies.filter(company => {
@@ -199,6 +235,14 @@ export default function ManageCompanies() {
                                 ))}
                             </TableBody>
                         </Table>
+                        <CustomPagination
+                            paginationMeta={paginationMeta}
+                            search={search}
+                            filterStatus={filterStatus}
+                            onPageChange={handlePageChange}
+                        >
+
+                        </CustomPagination>
                     </CardContent>
                 </Card>
             </div>
