@@ -83,6 +83,15 @@ export default function ManageCompanies() {
         window.scrollTo(0, 0);
     };
 
+    const handleDelete = async (companyId: number) => {
+        try {
+            const response = await api.delete(`admin/companies/${companyId}`);
+            fetchCompanies();
+        } catch (error) {
+            console.error('Erro ao deletar empresa', error);
+        }
+    }
+
     const filteredCompanies = companies.filter(company => {
         const matchesSearch = company.name.toLowerCase().includes(search.toLowerCase()) ||
             company.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -226,7 +235,7 @@ export default function ManageCompanies() {
                                                 <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/companies/edit/${company.id}`)}>
                                                     <Edit3 className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" >
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -246,6 +255,6 @@ export default function ManageCompanies() {
                     </CardContent>
                 </Card>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
