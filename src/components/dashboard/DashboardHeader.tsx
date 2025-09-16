@@ -9,9 +9,10 @@ interface DashboardHeaderProps {
   userName: string;
   userPoints?: number;
   onLogout: () => void;
+  logo?: string;
 }
 
-export function DashboardHeader({ userType, userName, userPoints, onLogout }: DashboardHeaderProps) {
+export function DashboardHeader({ userType, userName, userPoints, onLogout, logo = 'public/logo_secondary.svg' }: DashboardHeaderProps) {
   const getUserTypeInfo = (type: UserType) => {
     switch (type) {
       case "client":
@@ -42,10 +43,16 @@ export function DashboardHeader({ userType, userName, userPoints, onLogout }: Da
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
-            <ShoppingCart className="w-6 h-6 text-white" />
+            <a href="/">
+              <img
+                src={logo}
+                alt="Oiaí"
+                className="w-8 h-8 object-contain"
+              />
+            </a>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Smart Shopping</h1>
+            <h1 className="text-2xl font-bold text-foreground">Oiaí - Pesquisa de Preços</h1>
             <p className="text-sm text-muted-foreground">Otimize suas compras</p>
           </div>
         </div>
