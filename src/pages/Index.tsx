@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { UserType } from "@/components/auth/LoginForm";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { CompanyDashboard } from "@/components/dashboard/CompanyDashboard";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import Auth from "./Auth";
 import { useLocation } from "react-router-dom";
 import { NotificationToast } from "@/components/notification/NotificationToast";
-import api from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 

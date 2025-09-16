@@ -3,16 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Building2, Shield, LogOut, Star } from "lucide-react";
+import { CustomLogo } from "../oiai_ui/CustomLogo";
 
 interface DashboardHeaderProps {
   userType: UserType;
   userName: string;
   userPoints?: number;
   onLogout: () => void;
-  logo?: string;
 }
 
-export function DashboardHeader({ userType, userName, userPoints, onLogout, logo = 'public/logo_secondary.svg' }: DashboardHeaderProps) {
+export function DashboardHeader({ userType, userName, userPoints, onLogout }: DashboardHeaderProps) {
   const getUserTypeInfo = (type: UserType) => {
     switch (type) {
       case "client":
@@ -44,11 +44,7 @@ export function DashboardHeader({ userType, userName, userPoints, onLogout, logo
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
             <a href="/">
-              <img
-                src={logo}
-                alt="Oiaí"
-                className="w-8 h-8 object-contain"
-              />
+              <CustomLogo className="w-8 h-8" />
             </a>
           </div>
           <div>

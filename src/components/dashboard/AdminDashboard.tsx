@@ -217,7 +217,7 @@ export function AdminDashboard() {
                         <Star className="w-3 h-3 fill-secondary text-secondary" />
                         <span>{user.reputation}</span>
                         <span>•</span>
-                        <span>{user.points} pts</span>
+                        <span>{user.points ?? 0} pts</span>
                       </div>
                     </div>
                   </div>
