@@ -20,7 +20,6 @@ interface Product {
   brand?: string;
   description?: string;
   average_price: number;
-  status: 'active' | 'inactive' | 'pending_review';
   created_at: string;
   updated_at: string;
 }
@@ -47,7 +46,6 @@ export default function ManageProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -64,7 +62,7 @@ export default function ManageProducts() {
     }
 
     const timeout = setTimeout(() => {
-      fetchProducts(1, search, filterStatus, filterCategory);
+      fetchProducts(1, search, filterCategory);
     }, 500);
 
     setSearchTimeout(timeout);
@@ -74,12 +72,11 @@ export default function ManageProducts() {
         clearTimeout(searchTimeout);
       }
     };
-  }, [search, filterStatus, filterCategory]);
+  }, [search, filterCategory]);
 
   const fetchProducts = async (
     page: number = 1,
     searchTerm: string = search,
-    status: string = filterStatus,
     category: string = filterCategory
   ) => {
     try {
@@ -87,7 +84,6 @@ export default function ManageProducts() {
       const params: any = { page };
 
       if (searchTerm) params.search = searchTerm;
-      if (status !== "all") params.status = status;
       if (category !== "all") params.category = category;
 
       const response = await api.get("/admin/products", { params });
@@ -111,7 +107,7 @@ export default function ManageProducts() {
   };
 
   const handlePageChange = (page: number, searchTerm: string, status: string, category: string) => {
-    fetchProducts(page, searchTerm, status, category);
+    fetchProducts(page, searchTerm, category);
     window.scrollTo(0, 0);
   };
 
@@ -152,25 +148,6 @@ export default function ManageProducts() {
     } catch (error) {
       console.error('Erro ao exportar produtos:', error);
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'active': 'default',
-      'inactive': 'secondary',
-      'pending_review': 'outline'
-    };
-    const labels = {
-      'active': 'Ativo',
-      'inactive': 'Inativo',
-      'pending_review': 'Revisão Pendente'
-    };
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] as any}>
-        {labels[status as keyof typeof labels]}
-      </Badge>
-    );
   };
 
   const formatPrice = (price: number) => {
@@ -230,7 +207,7 @@ export default function ManageProducts() {
         {/* Filtros */}
         <Card className="border-0 shadow-soft">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -240,18 +217,6 @@ export default function ManageProducts() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="active">Ativo</SelectItem>
-                  <SelectItem value="inactive">Inativo</SelectItem>
-                  <SelectItem value="pending_review">Revisão Pendente</SelectItem>
-                </SelectContent>
-              </Select>
 
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger>
@@ -301,7 +266,6 @@ export default function ManageProducts() {
                       <TableHead>Código de Barras</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Preço Médio</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Última Atualização</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -343,10 +307,6 @@ export default function ManageProducts() {
                         </TableCell>
 
                         <TableCell>
-                          {getStatusBadge(product.status)}
-                        </TableCell>
-
-                        <TableCell>
                           {new Date(product.updated_at).toLocaleDateString('pt-BR')}
                         </TableCell>
 
@@ -378,12 +338,6 @@ export default function ManageProducts() {
                   <div className="text-center py-12 text-muted-foreground">
                     <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum produto encontrado</p>
-                    <p className="text-sm">
-                      {search || filterStatus !== "all" || filterCategory !== "all"
-                        ? "Tente ajustar os filtros de pesquisa."
-                        : "Comece adicionando seu primeiro produto."
-                      }
-                    </p>
                   </div>
                 )}
 
@@ -391,7 +345,7 @@ export default function ManageProducts() {
                   <CustomPagination
                     paginationMeta={paginationMeta}
                     search={search}
-                    filterStatus={filterStatus}
+                    filterStatus='all'
                     onPageChange={handlePaginationChange}
                   />
                 )}
