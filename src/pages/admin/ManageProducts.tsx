@@ -1,3 +1,4 @@
+// pages/admin/ManageProducts.tsx
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,22 +6,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Search, Edit3, Trash2, Plus, ArrowLeft, Star, TrendingUp, Building2 } from "lucide-react";
+import { Package, Search, Edit3, Trash2, Plus, ArrowLeft, Upload, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
 interface Product {
   id: number;
   name: string;
+  sku: string;
   category: string;
-  barcode?: string;
-  averagePrice: number;
-  priceCount: number;
-  reliability: number;
-  lastUpdated: string;
-  topStore: string;
-  registrations: number;
-  status: 'active' | 'inactive' | 'pending';
+  brand?: string;
+  description?: string;
+  average_price: number;
+  status: 'active' | 'inactive' | 'pending_review';
+  created_at: string;
+  updated_at: string;
+}
+
+interface Category {
+  id: number;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  description: string;
+}
+
+interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number;
+  to: number;
 }
 
 export default function ManageProducts() {
@@ -28,57 +47,52 @@ export default function ManageProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
-  const fetchProducts = async () => {
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchProducts(1, search, filterStatus, filterCategory);
+    }, 500);
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [search, filterStatus, filterCategory]);
+
+  const fetchProducts = async (
+    page: number = 1,
+    searchTerm: string = search,
+    status: string = filterStatus,
+    category: string = filterCategory
+  ) => {
     try {
       setLoading(true);
-      // Mock data for now
-      setProducts([
-        {
-          id: 1,
-          name: "Arroz Branco Tipo 1 5kg",
-          category: "Grãos e Cereais",
-          barcode: "7891234567890",
-          averagePrice: 18.50,
-          priceCount: 45,
-          reliability: 4.2,
-          lastUpdated: "2024-01-28",
-          topStore: "Supermercado Extra",
-          registrations: 120,
-          status: "active"
-        },
-        {
-          id: 2,
-          name: "Leite Integral 1L",
-          category: "Laticínios",
-          barcode: "7891234567891",
-          averagePrice: 4.50,
-          priceCount: 32,
-          reliability: 4.5,
-          lastUpdated: "2024-01-29",
-          topStore: "Mercado São José",
-          registrations: 89,
-          status: "active"
-        },
-        {
-          id: 3,
-          name: "Açúcar Cristal 1kg",
-          category: "Açúcares e Adoçantes",
-          averagePrice: 3.20,
-          priceCount: 28,
-          reliability: 3.8,
-          lastUpdated: "2024-01-27",
-          topStore: "Supermercado Extra",
-          registrations: 75,
-          status: "active"
-        }
-      ]);
+      const params: any = { page };
+
+      if (searchTerm) params.search = searchTerm;
+      if (status !== "all") params.status = status;
+      if (category !== "all") params.category = category;
+
+      const response = await api.get("/admin/products", { params });
+      setProducts(response.data.data);
+      setPaginationMeta(response.data.meta);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
     } finally {
@@ -86,30 +100,72 @@ export default function ManageProducts() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase()) ||
-                         product.category.toLowerCase().includes(search.toLowerCase()) ||
-                         (product.barcode && product.barcode.includes(search));
-    const matchesCategory = filterCategory === "all" || product.category === filterCategory;
-    const matchesStatus = filterStatus === "all" || product.status === filterStatus;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/admin/categories");
+      // console.log(response.data);
+      setCategories(response.data.categories);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    }
+  };
 
-  const categories = Array.from(new Set(products.map(p => p.category)));
+  const handlePageChange = (page: number, searchTerm: string, status: string, category: string) => {
+    fetchProducts(page, searchTerm, status, category);
+    window.scrollTo(0, 0);
+  };
+
+  const handlePaginationChange = (page: number, searchTerm: string, status: string) => {
+    handlePageChange(page, searchTerm, status, filterCategory);
+  };
+
+  const handleDelete = async (productId: number) => {
+    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+
+    try {
+      await api.delete(`/admin/products/${productId}`);
+      fetchProducts();
+    } catch (error) {
+      console.error('Erro ao deletar produto:', error);
+      alert('Erro ao excluir produto');
+    }
+  };
+
+  const handleBulkUpload = () => {
+    // Implementar lógica de upload em massa
+    navigate('/admin/products/bulk-upload');
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await api.get("/admin/products/export", {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'produtos.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Erro ao exportar produtos:', error);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
       'active': 'default',
       'inactive': 'secondary',
-      'pending': 'outline'
+      'pending_review': 'outline'
     };
     const labels = {
       'active': 'Ativo',
       'inactive': 'Inativo',
-      'pending': 'Pendente'
+      'pending_review': 'Revisão Pendente'
     };
-    
+
     return (
       <Badge variant={variants[status as keyof typeof variants] as any}>
         {labels[status as keyof typeof labels]}
@@ -117,223 +173,233 @@ export default function ManageProducts() {
     );
   };
 
-  const getReliabilityColor = (reliability: number) => {
-    if (reliability >= 4.0) return "text-green-600";
-    if (reliability >= 3.0) return "text-yellow-600";
-    return "text-red-600";
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Gerenciar Produtos</h1>
-            <p className="text-muted-foreground">
-              Gerencie todos os produtos cadastrados na plataforma
-            </p>
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin')}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Gerenciar Produtos</h1>
+              <p className="text-muted-foreground">
+                Gerencie todos os produtos cadastrados na plataforma
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleExport}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleBulkUpload}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Importar em Massa
+            </Button>
+
+            <Button
+              onClick={() => navigate('/admin/products/new')}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Produto
+            </Button>
           </div>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Produto
-        </Button>
-      </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Filtros */}
         <Card className="border-0 shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-primary" />
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, código de barras ou marca..."
+                  className="pl-10"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-              <div>
-                <p className="text-xl font-bold">{products.length}</p>
-                <p className="text-xs text-muted-foreground">Total de Produtos</p>
-              </div>
+
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                  <SelectItem value="pending_review">Revisão Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
+        {/* Tabela de Produtos */}
         <Card className="border-0 shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">
-                  {products.reduce((sum, p) => sum + p.priceCount, 0)}
-                </p>
-                <p className="text-xs text-muted-foreground">Preços Cadastrados</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Produtos {paginationMeta ? `(${paginationMeta.total})` : ''}
+            </CardTitle>
+          </CardHeader>
 
-        <Card className="border-0 shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">
-                  {(products.reduce((sum, p) => sum + p.reliability, 0) / products.length).toFixed(1)}
-                </p>
-                <p className="text-xs text-muted-foreground">Confiabilidade Média</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{categories.length}</p>
-                <p className="text-xs text-muted-foreground">Categorias</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, categoria ou código de barras..."
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-full sm:w-60">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+                    <div className="w-10 h-10 bg-gray-200 rounded"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Produto</TableHead>
+                      <TableHead>Código de Barras</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Preço Médio</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Última Atualização</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
 
-      {/* Tabela de Produtos */}
-      <Card className="border-0 shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Produtos ({filteredProducts.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Preço Médio</TableHead>
-                <TableHead>Confiabilidade</TableHead>
-                <TableHead>Top Loja</TableHead>
-                <TableHead>Cadastros</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Atualizado</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline" className="text-xs">
-                          {product.category}
-                        </Badge>
-                        {product.barcode && (
-                          <code className="text-xs bg-muted px-1 rounded">
-                            {product.barcode}
+                  <TableBody>
+                    {products.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            {product.brand && (
+                              <p className="text-sm text-muted-foreground">
+                                {product.brand}
+                              </p>
+                            )}
+                            {product.description && (
+                              <p className="text-xs text-muted-foreground truncate max-w-xs">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                            {product.sku || 'N/A'}
                           </code>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">
-                        R$ {product.averagePrice.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {product.priceCount} preços
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Star className={`w-4 h-4 fill-current ${getReliabilityColor(product.reliability)}`} />
-                      <span className={`font-medium ${getReliabilityColor(product.reliability)}`}>
-                        {product.reliability.toFixed(1)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm">{product.topStore}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{product.registrations}</Badge>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(product.status)}</TableCell>
-                  <TableCell>
-                    {new Date(product.lastUpdated).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <span className="text-sm">{product.category}</span>
+                        </TableCell>
+
+                        <TableCell>
+                          <span className="font-medium">
+                            {formatPrice(product.average_price)}
+                          </span>
+                        </TableCell>
+
+                        <TableCell>
+                          {getStatusBadge(product.status)}
+                        </TableCell>
+
+                        <TableCell>
+                          {new Date(product.updated_at).toLocaleDateString('pt-BR')}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(product.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {products.length === 0 && !loading && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum produto encontrado</p>
+                    <p className="text-sm">
+                      {search || filterStatus !== "all" || filterCategory !== "all"
+                        ? "Tente ajustar os filtros de pesquisa."
+                        : "Comece adicionando seu primeiro produto."
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {paginationMeta && paginationMeta.last_page > 1 && (
+                  <CustomPagination
+                    paginationMeta={paginationMeta}
+                    search={search}
+                    filterStatus={filterStatus}
+                    onPageChange={handlePaginationChange}
+                  />
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 }
