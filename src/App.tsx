@@ -14,6 +14,7 @@ import { UserProvider } from "./contexts/UserContext";
 import AddCompany from "./pages/admin/AddCompany";
 import EditCompany from "./pages/admin/EditCompany";
 import ManageProducts from "./pages/admin/ManageProducts";
+import AddProduct from "./pages/admin/AddProduct";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/admin/companies/edit/:id" element={<EditCompany />} />
 
             <Route path="/admin/products" element={<ManageProducts />} />
+            <Route path="/admin/products/new" element={<AddProduct />} />
             {/* <Route path="/admin/companies/new" element={<AddCompany />} />
             <Route path="/admin/companies/edit/:id" element={<EditCompany />} /> */}
 
