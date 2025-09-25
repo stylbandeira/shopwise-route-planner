@@ -1,4 +1,3 @@
-// pages/admin/ManageProducts.tsx
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,8 +97,7 @@ export default function ManageProducts() {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get("/admin/categories");
-      // console.log(response.data);
+      const response = await api.get("/categories");
       setCategories(response.data.categories);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
@@ -128,7 +126,7 @@ export default function ManageProducts() {
   };
 
   const handleBulkUpload = () => {
-    // Implementar lógica de upload em massa
+    //TODO Implementar lógica de upload em massa
     navigate('/admin/products/bulk-upload');
   };
 
