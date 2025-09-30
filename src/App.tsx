@@ -15,6 +15,7 @@ import AddCompany from "./pages/admin/AddCompany";
 import EditCompany from "./pages/admin/EditCompany";
 import ManageProducts from "./pages/admin/ManageProducts";
 import AddProduct from "./pages/admin/AddProduct";
+import EditProduct from "./pages/admin/EditProduct";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
 
             <Route path="/admin/products" element={<ManageProducts />} />
             <Route path="/admin/products/new" element={<AddProduct />} />
+            <Route path="/admin/products/edit/:id" element={<EditProduct />} />
             {/* <Route path="/admin/companies/new" element={<AddCompany />} />
             <Route path="/admin/companies/edit/:id" element={<EditCompany />} /> */}
 
