@@ -18,6 +18,8 @@ interface ProductFormData {
     average_price: string;
     category: string;
     img?: File | string | null;
+    unit_id?: string;
+    category_id?: string;
 }
 
 interface ProductFormProps {
@@ -35,6 +37,8 @@ const defaultProductData: ProductFormData = {
     sku: "",
     average_price: "",
     category: "",
+    unit_id: "",
+    category_id: ""
 };
 
 export function ProductForm({
@@ -86,6 +90,16 @@ export function ProductForm({
         setFormData(prev => ({ ...prev, img: file }));
     };
 
+    const handleCategoryChange = (id) => {
+        setFormData(prev => ({ ...prev, category_id: id }));
+        setFormData(prev => ({ ...prev, category: id }));
+    }
+
+    const handleUnityChange = (id) => {
+        setFormData(prev => ({ ...prev, unit_id: id }));
+        setFormData(prev => ({ ...prev, unity: id }));
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -94,7 +108,7 @@ export function ProductForm({
         try {
             await onSubmit({
                 ...formData,
-                img: formData.img instanceof File ? formData.img : undefined
+                img: formData.img instanceof File ? formData.img : undefined,
             });
         } catch (error: any) {
             if (error.response?.data?.errors) {
@@ -128,7 +142,7 @@ export function ProductForm({
                         label="Categoria"
                         name="category"
                         value={formData.category}
-                        onValueChange={(id) => setFormData(prev => ({ ...prev, category: id }))}
+                        onValueChange={handleCategoryChange}
                         placeholder="Selecione a categoria"
                         required
                         disabled={isLoading}
@@ -167,7 +181,7 @@ export function ProductForm({
                                 label="Unidade"
                                 name="unity"
                                 value={formData.unity}
-                                onValueChange={(id) => setFormData(prev => ({ ...prev, unity: id }))}
+                                onValueChange={handleUnityChange}
                                 placeholder="Selecione a unidade"
                                 required
                                 disabled={isLoading}
