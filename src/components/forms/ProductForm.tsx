@@ -1,12 +1,10 @@
 // components/forms/CompanyForm.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FormLayout } from "./FormLayout";
-import { FormInput, FormTextarea, FormSelect } from "./FormFields";
-import { Building2, Globe, MapPin, Mail, Phone, FileText } from "lucide-react";
-import { formatCNPJ, removeFormatting } from "@/utils/formatters";
+import { FormInput } from "./FormFields";
+import { Building2 } from "lucide-react";
 import { ImageUpload } from "./ImageUpload";
-import { FormUnitySelect } from "./FormUnitySelect";
 import { FormSearchSelect } from "./FormSearchSelect";
 import api from "@/lib/api";
 
