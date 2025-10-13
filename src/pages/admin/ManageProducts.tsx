@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
+import { CSVUploader } from "@/components/oiai_ui/CSVUploader";
 
 interface Product {
   id: number;
@@ -125,9 +126,16 @@ export default function ManageProducts() {
     }
   };
 
-  const handleBulkUpload = () => {
+  const handleBulkUpload = async (file: File) => {
     //TODO Implementar lógica de upload em massa
-    navigate('/admin/products/bulk-upload');
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post("admin/products/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+
+    return response.data;
   };
 
   const handleExport = async () => {
@@ -185,13 +193,19 @@ export default function ManageProducts() {
               Exportar
             </Button>
 
-            <Button
+            {/* <Button
               variant="outline"
               onClick={handleBulkUpload}
             >
               <Upload className="w-4 h-4 mr-2" />
               Importar em Massa
-            </Button>
+            </Button> */}
+
+            <CSVUploader
+              onFileSubmit={handleBulkUpload}
+              buttonText="Importar em Massa"
+              accept=".csv"
+            />
 
             <Button
               onClick={() => navigate('/admin/products/new')}
