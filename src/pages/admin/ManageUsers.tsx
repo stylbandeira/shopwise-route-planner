@@ -12,8 +12,9 @@ import api from "@/lib/api";
 interface User {
   id: number;
   name: string;
-  email: string;
   type: 'client' | 'company' | 'admin';
+  email: string;
+  cpf: string;
   points: number;
   reputation: number;
   status: 'active' | 'inactive' | 'suspended';
@@ -23,56 +24,64 @@ interface User {
 export default function ManageUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
+  const [test, setTest] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [paginationMeta, setPaginationMeta] = useState<any>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchUsers(1, search, filterStatus, filterType); // 🎯 BUSCA NOVAMENTE
+    }, 500);
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [search, filterStatus, filterType]);
+
+  const fetchUsers = async (page: number = 1, searchTerm: string = search, status: string = filterStatus, type: string = filterType) => {
     try {
       setLoading(true);
-      // Mock data for now
-      setUsers([
-        {
-          id: 1,
-          name: "João Silva",
-          email: "joao@email.com",
-          type: "client",
-          points: 850,
-          reputation: 4.8,
-          status: "active",
-          createdAt: "2024-01-15"
-        },
-        {
-          id: 2,
-          name: "Supermercado Extra",
-          email: "contato@extra.com",
-          type: "company",
-          points: 0,
-          reputation: 4.5,
-          status: "active",
-          createdAt: "2024-02-01"
-        }
-      ]);
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      const params: any = { page };
+
+      if (searchTerm) params.search = searchTerm;
+      if (status !== "all") params.status = status;
+      if (type !== "all") params.type = type;
+
+      const response = await api.get("/admin/users", { params });
+
+      console.log(response.data.data);
+
+      // 🎯 VERIFICAÇÃO EXTRA
+      if (response.data.data && Array.isArray(response.data.data)) {
+        setUsers(response.data.data);
+      } else {
+        setUsers([]);
+      }
+
+      setPaginationMeta(response.data.meta || {});
+
+    } catch (error: any) {
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) ||
-                         user.email.toLowerCase().includes(search.toLowerCase());
-    const matchesType = filterType === "all" || user.type === filterType;
-    const matchesStatus = filterStatus === "all" || user.status === filterStatus;
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
 
   const getTypeLabel = (type: string) => {
     const labels = {
@@ -94,7 +103,7 @@ export default function ManageUsers() {
       'inactive': 'Inativo',
       'suspended': 'Suspenso'
     };
-    
+
     return (
       <Badge variant={variants[status as keyof typeof variants] as any}>
         {labels[status as keyof typeof labels]}
@@ -171,7 +180,7 @@ export default function ManageUsers() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Usuários ({filteredUsers.length})
+            Usuários ({users.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -188,7 +197,7 @@ export default function ManageUsers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div>
