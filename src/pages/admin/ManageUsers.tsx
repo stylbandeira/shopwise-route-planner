@@ -82,6 +82,15 @@ export default function ManageUsers() {
     }
   };
 
+  const handleDelete = async (userId: number) => {
+    try {
+      const response = await api.delete(`admin/users/${userId}`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Erro ao deletar usuário', error);
+    }
+  }
+
   const getTypeLabel = (type: string) => {
     const labels = {
       'client': 'Cliente',
@@ -225,7 +234,7 @@ export default function ManageUsers() {
                       <Button variant="ghost" size="icon">
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
