@@ -18,13 +18,12 @@ interface User {
   points: number;
   reputation: number;
   status: 'active' | 'inactive' | 'suspended';
-  createdAt: string;
+  created_at: string;
 }
 
 export default function ManageUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
-  const [test, setTest] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -219,7 +218,7 @@ export default function ManageUsers() {
                   </TableCell>
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                    {new Date(user.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
