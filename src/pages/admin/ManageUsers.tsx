@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft } from "lucide-react";
+import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 
@@ -19,6 +19,7 @@ interface User {
   reputation: number;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
+  deleted_at: string;
 }
 
 export default function ManageUsers() {
@@ -82,9 +83,15 @@ export default function ManageUsers() {
     }
   };
 
-  const handleDelete = async (userId: number) => {
+  const handleDelete = async (user: User) => {
     try {
-      const response = await api.delete(`admin/users/${userId}`);
+      if (!(user.deleted_at === null || user.deleted_at === '')) {
+        console.log(user.deleted_at);
+        const response = await api.post(`admin/users/revertDeleted/${user.id}`);
+      } else {
+        console.log(user.deleted_at);
+        const response = await api.delete(`admin/users/${user.id}`);
+      }
       fetchUsers();
     } catch (error) {
       console.error('Erro ao deletar usuário', error);
@@ -138,7 +145,9 @@ export default function ManageUsers() {
             </p>
           </div>
         </div>
-        <Button>
+        <Button
+          onClick={() => navigate('/admin/users/new')}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Usuário
         </Button>
@@ -231,11 +240,17 @@ export default function ManageUsers() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true}>
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
-                        <Trash2 className="w-4 h-4" />
+                      <Button variant="ghost" title={user.deleted_at === null ? "Excluir usuário" : "Restaurar usuário"}
+                        size="icon"
+                        onClick={() => handleDelete(user)}>
+                        {user.deleted_at === null ? (
+                          <Trash2 className="w-4 h-4" />
+                        ) : (
+                          <ArchiveRestore className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>
