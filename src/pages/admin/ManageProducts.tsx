@@ -193,14 +193,6 @@ export default function ManageProducts() {
               Exportar
             </Button>
 
-            {/* <Button
-              variant="outline"
-              onClick={handleBulkUpload}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importar em Massa
-            </Button> */}
-
             <CSVUploader
               onFileSubmit={handleBulkUpload}
               buttonText="Importar em Massa"

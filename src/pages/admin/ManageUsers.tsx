@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 
@@ -98,6 +98,39 @@ export default function ManageUsers() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+
+      const params: any = {};
+
+      if (search) params.search = search;
+      if (filterType !== "all") params.type = filterType;
+      if (filterStatus !== "all") params.status = filterStatus;
+      if (sortField) {
+        params.sort_by = sortField;
+        params.sort_order = sortOrder;
+      }
+
+      const response = await api.get("/admin/users/export", {
+        responseType: 'blob',
+        params: params
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `usuarios_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao exportar usuários:', error);
+      alert('Erro ao exportar usuários');
+    }
+  };
+
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
       return <ArrowUpDown className="w-4 h-4" />;
@@ -165,12 +198,22 @@ export default function ManageUsers() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => navigate('/admin/users/new')}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Usuário
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+
+          <Button
+            onClick={() => navigate('/admin/users/new')}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Usuário
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
