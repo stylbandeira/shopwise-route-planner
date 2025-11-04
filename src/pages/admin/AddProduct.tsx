@@ -40,18 +40,18 @@ export default function AddProduct() {
 
             navigate("/admin/products", {
                 state: {
-                    message: "Empresa cadastrada com sucesso!",
+                    message: "Produto cadastrada com sucesso!",
                     type: "success"
                 }
             });
         } catch (error) {
-            console.error('Erro ao cadastrar empresa:', error);
+            console.error('Erro ao cadastrar produto:', error);
             console.error('Resposta do erro:', error.response);
 
             if (error.response?.data?.errors) {
                 throw error;
             } else {
-                alert('Erro ao cadastrar empresa. Tente novamente.');
+                alert('Erro ao cadastrar produto. Tente novamente.');
             }
         } finally {
             setIsSubmitting(false);
