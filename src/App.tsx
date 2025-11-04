@@ -17,6 +17,8 @@ import ManageProducts from "./pages/admin/ManageProducts";
 import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import ManageUsers from "./pages/admin/ManageUsers";
+import AddUser from "./pages/admin/AddUser";
+import EditUser from "./pages/admin/EditUser";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +51,8 @@ const App = () => (
 
             {/* ROTAS DE USUÁRIOS */}
             <Route path="/admin/users" element={<ManageUsers />} />
+            <Route path="/admin/users/new" element={<AddUser />} />
+            <Route path="/admin/users/edit/:id" element={<EditUser />} />
             {/* <Route path="/admin/companies/new" element={<AddCompany />} />
             <Route path="/admin/companies/edit/:id" element={<EditCompany />} /> */}
 
