@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore } from "lucide-react";
+import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 
@@ -22,6 +22,9 @@ interface User {
   deleted_at: string;
 }
 
+type SortField = 'reputation' | 'points' | 'name' | 'created_at' | '';
+type SortOrder = 'asc' | 'desc';
+
 export default function ManageUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
@@ -31,6 +34,8 @@ export default function ManageUsers() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [paginationMeta, setPaginationMeta] = useState<any>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [sortField, setSortField] = useState<SortField>('');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   useEffect(() => {
     fetchUsers();
@@ -52,7 +57,7 @@ export default function ManageUsers() {
         clearTimeout(searchTimeout);
       }
     };
-  }, [search, filterStatus, filterType]);
+  }, [search, filterStatus, filterType, sortField, sortOrder]);
 
   const fetchUsers = async (page: number = 1, searchTerm: string = search, status: string = filterStatus, type: string = filterType) => {
     try {
@@ -63,11 +68,12 @@ export default function ManageUsers() {
       if (status !== "all") params.status = status;
       if (type !== "all") params.type = type;
 
+      if (sortField) {
+        params.sort_by = sortField;
+        params.sort_order = sortOrder;
+      }
+
       const response = await api.get("/admin/users", { params });
-
-      console.log(response.data.data);
-
-      // 🎯 VERIFICAÇÃO EXTRA
       if (response.data.data && Array.isArray(response.data.data)) {
         setUsers(response.data.data);
       } else {
@@ -83,13 +89,27 @@ export default function ManageUsers() {
     }
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4" />;
+    }
+    return sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+  };
+
   const handleDelete = async (user: User) => {
     try {
       if (!(user.deleted_at === null || user.deleted_at === '')) {
-        console.log(user.deleted_at);
         const response = await api.post(`admin/users/revertDeleted/${user.id}`);
       } else {
-        console.log(user.deleted_at);
         const response = await api.delete(`admin/users/${user.id}`);
       }
       fetchUsers();
@@ -204,12 +224,58 @@ export default function ManageUsers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Pontos</TableHead>
-                <TableHead>Reputação</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 hover:bg-transparent font-medium"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Usuário
+                      {getSortIcon('name')}
+                    </div>
+                  </Button>
+                </TableHead>
+                <TableHead>
+
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 hover:bg-transparent font-medium"
+                    onClick={() => handleSort('points')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Pontos
+                      {getSortIcon('points')}
+                    </div>
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 hover:bg-transparent font-medium"
+                    onClick={() => handleSort('reputation')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Reputação
+                      {getSortIcon('reputation')}
+                    </div>
+                  </Button>
+                </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Cadastro</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 hover:bg-transparent font-medium"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Cadastro
+                      {getSortIcon('created_at')}
+                    </div>
+                  </Button>
+                </TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
