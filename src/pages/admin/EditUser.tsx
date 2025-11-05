@@ -4,6 +4,7 @@ import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
 import { ProductForm } from "@/components/forms/ProductForm";
+import { UserForm } from "@/components/forms/UserForm";
 
 export default function EditUser() {
     const navigate = useNavigate();
@@ -77,7 +78,7 @@ export default function EditUser() {
     return (
         <DashboardLayout>
             <div className="container mx-auto px-4 py-6">
-                <ProductForm
+                <UserForm
                     initialData={editedUser}
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
