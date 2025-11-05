@@ -347,9 +347,10 @@ export default function ManageUsers() {
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true}>
+                      <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true} onClick={() => navigate(`/admin/users/edit/${user.id}`)}>
                         <Edit3 className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" title={user.deleted_at === null ? "Excluir usuário" : "Restaurar usuário"}
@@ -363,6 +364,7 @@ export default function ManageUsers() {
                       </Button>
                     </div>
                   </TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
