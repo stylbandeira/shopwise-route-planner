@@ -65,6 +65,12 @@ export function UserForm({
     const isCompanyType = formData.type === 'company';
 
     useEffect(() => {
+
+        if (isEditing) {
+            const companyIds = formData.companies.map(comp => comp.id);
+            handleCompaniesChange(companyIds);
+        }
+
         const loadData = async () => {
             setIsLoadingCompanies(true);
 
