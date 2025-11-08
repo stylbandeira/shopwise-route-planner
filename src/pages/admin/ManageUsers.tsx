@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface User {
   id: number;
@@ -180,197 +181,199 @@ export default function ManageUsers() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-            <p className="text-muted-foreground">
-              Gerencie todos os usuários da plataforma
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-
-          <Button
-            onClick={() => navigate('/admin/users/new')}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Usuário
-          </Button>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou email..."
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
+              <p className="text-muted-foreground">
+                Gerencie todos os usuários da plataforma
+              </p>
             </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Tipo de usuário" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="client">Cliente</SelectItem>
-                <SelectItem value="company">Empresa</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
-                <SelectItem value="suspended">Suspenso</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleExport}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
 
-      {/* Tabela de Usuários */}
-      <Card className="border-0 shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Usuários ({users.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="p-0 hover:bg-transparent font-medium"
-                    onClick={() => handleSort('name')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Usuário
-                      {getSortIcon('name')}
-                    </div>
-                  </Button>
-                </TableHead>
-                <TableHead>
+            <Button
+              onClick={() => navigate('/admin/users/new')}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Usuário
+            </Button>
+          </div>
+        </div>
 
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="p-0 hover:bg-transparent font-medium"
-                    onClick={() => handleSort('points')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Pontos
-                      {getSortIcon('points')}
-                    </div>
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="p-0 hover:bg-transparent font-medium"
-                    onClick={() => handleSort('reputation')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Reputação
-                      {getSortIcon('reputation')}
-                    </div>
-                  </Button>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="p-0 hover:bg-transparent font-medium"
-                    onClick={() => handleSort('created_at')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Cadastro
-                      {getSortIcon('created_at')}
-                    </div>
-                  </Button>
-                </TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{getTypeLabel(user.type)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {user.type === 'client' ? user.points.toLocaleString() : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-secondary text-secondary" />
-                      <span>{user.reputation}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell>
-                    {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                  </TableCell>
+        {/* Filtros */}
+        <Card className="border-0 shadow-soft">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  className="pl-10"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Tipo de usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="client">Cliente</SelectItem>
+                  <SelectItem value="company">Empresa</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                  <SelectItem value="suspended">Suspenso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true} onClick={() => navigate(`/admin/users/edit/${user.id}`)}>
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" title={user.deleted_at === null ? "Excluir usuário" : "Restaurar usuário"}
-                        size="icon"
-                        onClick={() => handleDelete(user)}>
-                        {user.deleted_at === null ? (
-                          <Trash2 className="w-4 h-4" />
-                        ) : (
-                          <ArchiveRestore className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </TableCell>
+        {/* Tabela de Usuários */}
+        <Card className="border-0 shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Usuários ({users.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      className="p-0 hover:bg-transparent font-medium"
+                      onClick={() => handleSort('name')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Usuário
+                        {getSortIcon('name')}
+                      </div>
+                    </Button>
+                  </TableHead>
+                  <TableHead>
 
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      className="p-0 hover:bg-transparent font-medium"
+                      onClick={() => handleSort('points')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Pontos
+                        {getSortIcon('points')}
+                      </div>
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      className="p-0 hover:bg-transparent font-medium"
+                      onClick={() => handleSort('reputation')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Reputação
+                        {getSortIcon('reputation')}
+                      </div>
+                    </Button>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      className="p-0 hover:bg-transparent font-medium"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Cadastro
+                        {getSortIcon('created_at')}
+                      </div>
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getTypeLabel(user.type)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.type === 'client' ? user.points.toLocaleString() : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-secondary text-secondary" />
+                        <span>{user.reputation}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(user.status)}</TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true} onClick={() => navigate(`/admin/users/edit/${user.id}`)}>
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" title={user.deleted_at === null ? "Excluir usuário" : "Restaurar usuário"}
+                          size="icon"
+                          onClick={() => handleDelete(user)}>
+                          {user.deleted_at === null ? (
+                            <Trash2 className="w-4 h-4" />
+                          ) : (
+                            <ArchiveRestore className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 }

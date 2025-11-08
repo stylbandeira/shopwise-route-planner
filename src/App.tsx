@@ -19,6 +19,7 @@ import EditProduct from "./pages/admin/EditProduct";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AddUser from "./pages/admin/AddUser";
 import EditUser from "./pages/admin/EditUser";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -37,24 +38,38 @@ const App = () => (
             <Route path="/verify-email" element={<EmailVerificationPage />} />
             <Route path="/admin/companies" element={<ManageCompanies />} />
 
-            {/* ROTAS DE ADMIN */}
-            <Route path="/admin/companies" element={<ManageCompanies />} />
-            <Route path="/admin/companies/new" element={<AddCompany />} />
-            <Route path="/admin/companies/edit/:id" element={<EditCompany />} />
+            {/* ROTAS DE COMPANIES */}
+            <Route path="/admin/companies" element={<ProtectedRoute allowedTypes={['admin']}>
+              <ManageCompanies />
+            </ProtectedRoute>} />
+            <Route path="/admin/companies/new" element={<ProtectedRoute allowedTypes={['admin']}>
+              <AddCompany />
+            </ProtectedRoute>} />
+            <Route path="/admin/companies/edit/:id" element={<ProtectedRoute allowedTypes={['admin']}>
+              <EditCompany />
+            </ProtectedRoute>} />
 
             {/* ROTAS DE PRODUTOS */}
-            <Route path="/admin/products" element={<ManageProducts />} />
-            <Route path="/admin/products/new" element={<AddProduct />} />
-            <Route path="/admin/products/edit/:id" element={<EditProduct />} />
-            {/* <Route path="/admin/companies/new" element={<AddCompany />} />
-            <Route path="/admin/companies/edit/:id" element={<EditCompany />} /> */}
+            <Route path="/admin/products" element={<ProtectedRoute allowedTypes={['admin']}>
+              <ManageProducts />
+            </ProtectedRoute>} />
+            <Route path="/admin/products/new" element={<ProtectedRoute allowedTypes={['admin']}>
+              <AddProduct />
+            </ProtectedRoute>} />
+            <Route path="/admin/products/edit/:id" element={<ProtectedRoute allowedTypes={['admin']}>
+              <EditProduct />
+            </ProtectedRoute>} />
 
             {/* ROTAS DE USUÁRIOS */}
-            <Route path="/admin/users" element={<ManageUsers />} />
-            <Route path="/admin/users/new" element={<AddUser />} />
-            <Route path="/admin/users/edit/:id" element={<EditUser />} />
-            {/* <Route path="/admin/companies/new" element={<AddCompany />} />
-            <Route path="/admin/companies/edit/:id" element={<EditCompany />} /> */}
+            <Route path="/admin/users" element={<ProtectedRoute allowedTypes={['admin']}>
+              <ManageUsers />
+            </ProtectedRoute>} />
+            <Route path="/admin/users/new" element={<ProtectedRoute allowedTypes={['admin']}>
+              <AddUser />
+            </ProtectedRoute>} />
+            <Route path="/admin/users/edit/:id" element={<ProtectedRoute allowedTypes={['admin']}>
+              <EditUser />
+            </ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

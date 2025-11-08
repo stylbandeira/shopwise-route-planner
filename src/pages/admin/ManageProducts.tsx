@@ -172,7 +172,7 @@ export default function ManageProducts() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/admin')}
+              onClick={() => navigate('/')}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
