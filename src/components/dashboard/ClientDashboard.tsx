@@ -1,28 +1,97 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt } from "lucide-react";
+import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "@/lib/api";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { CustomPagination } from "../oiai_ui/CustomPagination";
+
+interface ItensList {
+  id: number;
+  name: string;
+  favorite: number;
+  status: string;
+  total: string;
+  productsQuantity: number;
+}
+
+interface DashboardData {
+  activeLists: number;
+  points: number;
+  monthEconomy: number;
+  reputation: number;
+}
+
+interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number;
+  to: number;
+}
+
+const defaultDashBoardData: DashboardData = {
+  activeLists: 0,
+  points: 0,
+  monthEconomy: 0,
+  reputation: 0,
+}
 
 export function ClientDashboard() {
   const navigate = useNavigate();
-  const [shoppingLists] = useState([
-    {
-      id: 1,
-      name: "Compras da Semana",
-      items: 12,
-      status: "em_andamento",
-      estimatedValue: 157.80
-    },
-    {
-      id: 2,
-      name: "Festa de Aniversário",
-      items: 8,
-      status: "concluida",
-      estimatedValue: 89.90
+  const [itensLists, setItensLists] = useState<ItensList[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData>(defaultDashBoardData);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetchItensLists();
+    fetchDashData();
+  }, []);
+
+  const fetchItensLists = async (
+    page: number = 1,
+  ) => {
+    const params: any = { page };
+    try {
+      const response = await api.get("/lists", { params });
+      console.log(dashboardData);
+
+      setItensLists(response.data.itensLists);
+
+    } catch (error) {
+
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const fetchDashData = async () => {
+    try {
+      const response = await api.get("/dashboard-data");
+
+      setDashboardData(response.data.dashboardData);
+    } catch (error) {
+
+    }
+  };
+
+  const handleDelete = async (listId: number) => {
+
+  }
+
+  const handlePaginationChange = (page: number) => {
+    handlePageChange(page);
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchItensLists(page);
+    window.scrollTo(0, 0);
+  };
 
   const [recentActivity] = useState([
     {
@@ -42,7 +111,6 @@ export function ClientDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Estatísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-0 shadow-soft">
           <CardContent className="p-6">
@@ -51,7 +119,7 @@ export function ClientDashboard() {
                 <ShoppingCart className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">3</p>
+                <p className="text-2xl font-bold">{dashboardData.activeLists || 0}</p>
                 <p className="text-sm text-muted-foreground">Listas Ativas</p>
               </div>
             </div>
@@ -65,7 +133,7 @@ export function ClientDashboard() {
                 <Star className="w-6 h-6 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">1,247</p>
+                <p className="text-2xl font-bold">{dashboardData.points}</p>
                 <p className="text-sm text-muted-foreground">Pontos</p>
               </div>
             </div>
@@ -79,7 +147,7 @@ export function ClientDashboard() {
                 <MapPin className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">R$ 247,50</p>
+                <p className="text-2xl font-bold">R$ {dashboardData.monthEconomy}</p>
                 <p className="text-sm text-muted-foreground">Economia Este Mês</p>
               </div>
             </div>
@@ -93,8 +161,8 @@ export function ClientDashboard() {
                 <Receipt className="w-6 h-6 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">89%</p>
-                <p className="text-sm text-muted-foreground">Precisão</p>
+                <p className="text-2xl font-bold">{dashboardData.reputation}</p>
+                <p className="text-sm text-muted-foreground">Reputação</p>
               </div>
             </div>
           </CardContent>
@@ -107,7 +175,7 @@ export function ClientDashboard() {
           <Card className="border-0 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-bold">Minhas Listas</CardTitle>
-              <Button 
+              <Button
                 onClick={() => navigate("/new-list")}
                 className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
               >
@@ -116,32 +184,26 @@ export function ClientDashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {shoppingLists.map((list) => (
+              {itensLists.map((list) => (
                 <div
                   key={list.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer "
                   onClick={() => navigate(`/list/${list.id}`)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <ShoppingCart className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">{list.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {list.items} itens • R$ {list.estimatedValue.toFixed(2)}
-                      </p>
+                  <div className="flex flex-col items-start gap-2">
+                    <CardTitle className="text-xl font-bold">{list.name}</CardTitle>
+                    <div className="text-xs text-muted-foreground">
+                      <span>{list.productsQuantity} itens</span>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-2">
+
                     <Badge
-                      variant={list.status === "concluida" ? "secondary" : "default"}
+                      variant={list.status !== "active" ? "secondary" : "default"}
                     >
-                      {list.status === "concluida" ? "Concluída" : "Em Andamento"}
+                      {list.status === "active" ? "Concluída" : "Em Andamento"}
                     </Badge>
-                    <Button variant="outline" size="sm">
-                      Ver Rota
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -204,6 +266,6 @@ export function ClientDashboard() {
           </Card>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

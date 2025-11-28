@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,59 +7,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Search, Plus, Minus, Heart, MapPin, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "@/lib/api";
 
 interface Product {
   id: number;
   name: string;
-  price: number;
+  average_price: number;
   category: string;
-  store: string;
-  distance: number;
   isFavorite: boolean;
   unit: string;
+  quantity: number;
+  unity: string;
+  unity_id: number;
 }
 
 interface SelectedItem {
   product: Product;
   quantity: number;
-  unit: string;
+  unity: string;
 }
-
-const UNITS = [
-  { value: "kg", label: "Kg" },
-  { value: "g", label: "g" },
-  { value: "units", label: "Unidades" },
-  { value: "liters", label: "Litros" },
-  { value: "ml", label: "ml" },
-  { value: "packages", label: "Pacotes" }
-];
 
 export default function NewShoppingList() {
   const navigate = useNavigate();
   const [listName, setListName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"price" | "distance">("price");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
 
-  const [products] = useState<Product[]>([
-    { id: 1, name: "Arroz Tio João 5kg", price: 18.90, category: "Grãos", store: "Supermercado ABC", distance: 1.2, isFavorite: true, unit: "kg" },
-    { id: 2, name: "Feijão Preto 1kg", price: 7.50, category: "Grãos", store: "Supermercado XYZ", distance: 2.1, isFavorite: false, unit: "kg" },
-    { id: 3, name: "Açúcar Cristal 1kg", price: 4.20, category: "Açúcar", store: "Supermercado ABC", distance: 1.2, isFavorite: true, unit: "kg" },
-    { id: 4, name: "Óleo de Soja 900ml", price: 5.80, category: "Óleos", store: "Mercado Local", distance: 0.8, isFavorite: false, unit: "ml" },
-    { id: 5, name: "Leite Integral 1L", price: 4.50, category: "Laticínios", store: "Supermercado XYZ", distance: 2.1, isFavorite: true, unit: "liters" },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [listProducts, setListProducts] = useState<Product[]>([]);
 
-  const filteredProducts = products
-    .filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === "price") {
-        return a.price - b.price;
-      }
-      return a.distance - b.distance;
-    });
+  useEffect(() => {
+    fetchProducts();
+    // fetchDashData();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await api.get("/products");
+      console.log(response.data.data[0].average_price);
+      setProducts(response.data.data);
+    } catch (error) {
+
+    }
+  };
 
   const favoriteProducts = products.filter(product => product.isFavorite);
 
@@ -72,7 +62,7 @@ export default function NewShoppingList() {
           : item
       ));
     } else {
-      setSelectedItems([...selectedItems, { product, quantity: 1, unit: product.unit }]);
+      setSelectedItems([...selectedItems, { product, quantity: 1, unity: product.unity }]);
     }
   };
 
@@ -97,12 +87,19 @@ export default function NewShoppingList() {
     ));
   };
 
-  const totalValue = selectedItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  const totalValue = selectedItems.reduce((total, item) => total + (item.product.average_price * item.quantity), 0);
 
-  const saveList = () => {
+  const saveList = async () => {
     // Aqui seria feita a chamada para a API
-    console.log("Salvando lista:", { name: listName, items: selectedItems });
-    navigate("/");
+    try {
+      const response = await api.post("/lists", { products: selectedItems, listName: listName });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/");
+    }
+    // console.log("Salvando lista:", { name: listName, items: selectedItems });
+    // navigate("/");
   };
 
   return (
@@ -122,7 +119,7 @@ export default function NewShoppingList() {
               className="text-lg font-semibold border-0 bg-transparent p-0 focus-visible:ring-0"
             />
           </div>
-          <Button 
+          <Button
             onClick={saveList}
             disabled={!listName || selectedItems.length === 0}
             className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
@@ -146,25 +143,6 @@ export default function NewShoppingList() {
                       className="pl-10"
                     />
                   </div>
-                  <Select value={sortBy} onValueChange={(value: "price" | "distance") => setSortBy(value)}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="price">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          Preço
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="distance">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          Distância
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </CardHeader>
               <CardContent>
@@ -176,22 +154,21 @@ export default function NewShoppingList() {
                       Favoritos
                     </TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="all" className="space-y-3 mt-4">
-                    {filteredProducts.map((product) => (
+                    {products.map((product) => (
                       <div
                         key={product.id}
                         className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                       >
                         <div className="flex-1">
                           <h3 className="font-semibold">{product.name}</h3>
+                          <span className="text-slate-400">{product.quantity + " " + product.unity}</span>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="secondary">{product.category}</Badge>
-                            <span className="text-sm text-muted-foreground">{product.store}</span>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="font-bold text-primary">R$ {product.price.toFixed(2)}</span>
-                            <span className="text-muted-foreground">{product.distance}km</span>
+                            <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
                           </div>
                         </div>
                         <Button onClick={() => addToList(product)} size="sm">
@@ -200,7 +177,7 @@ export default function NewShoppingList() {
                       </div>
                     ))}
                   </TabsContent>
-                  
+
                   <TabsContent value="favorites" className="space-y-3 mt-4">
                     {favoriteProducts.map((product) => (
                       <div
@@ -211,11 +188,9 @@ export default function NewShoppingList() {
                           <h3 className="font-semibold">{product.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="secondary">{product.category}</Badge>
-                            <span className="text-sm text-muted-foreground">{product.store}</span>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="font-bold text-primary">R$ {product.price.toFixed(2)}</span>
-                            <span className="text-muted-foreground">{product.distance}km</span>
+                            <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
                           </div>
                         </div>
                         <Button onClick={() => addToList(product)} size="sm">
@@ -278,21 +253,9 @@ export default function NewShoppingList() {
                               <Plus className="w-3 h-3" />
                             </Button>
                           </div>
-                          <Select value={item.unit} onValueChange={(value) => updateUnit(item.product.id, value)}>
-                            <SelectTrigger className="h-6 text-xs w-20">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNITS.map((unit) => (
-                                <SelectItem key={unit.value} value={unit.value}>
-                                  {unit.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          R$ {(item.product.price * item.quantity).toFixed(2)}
+                          R$ {(item.product.average_price * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     ))}
