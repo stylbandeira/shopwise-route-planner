@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Search, Plus, Minus, Heart, MapPin, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
 interface Product {
   id: number;
@@ -21,6 +22,15 @@ interface Product {
   unity_id: number;
 }
 
+interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number;
+  to: number;
+}
+
 interface SelectedItem {
   product: Product;
   quantity: number;
@@ -30,8 +40,11 @@ interface SelectedItem {
 export default function NewShoppingList() {
   const navigate = useNavigate();
   const [listName, setListName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [listProducts, setListProducts] = useState<Product[]>([]);
@@ -41,14 +54,51 @@ export default function NewShoppingList() {
     // fetchDashData();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      const response = await api.get("/products");
-      console.log(response.data.data[0].average_price);
-      setProducts(response.data.data);
-    } catch (error) {
-
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
+
+    const timeout = setTimeout(() => {
+      fetchProducts(1, search);
+    }, 500);
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [search]);
+
+  const fetchProducts = async (
+    page: number = 1,
+    searchTerm: string = search
+  ) => {
+    try {
+      setLoading(true);
+      const params: any = { page };
+
+      if (searchTerm) params.search = searchTerm;
+
+      const response = await api.get("/products", { params });
+      setProducts(response.data.data);
+      setPaginationMeta(response.data.meta);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page: number, searchTerm: string) => {
+    fetchProducts(page, searchTerm);
+    window.scrollTo(0, 0);
+  };
+
+  const handlePaginationChange = (page: number, searchTerm: string) => {
+    handlePageChange(page, searchTerm);
   };
 
   const favoriteProducts = products.filter(product => product.isFavorite);
@@ -138,8 +188,8 @@ export default function NewShoppingList() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       placeholder="Buscar produtos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
                       className="pl-10"
                     />
                   </div>
@@ -177,6 +227,15 @@ export default function NewShoppingList() {
                       </div>
                     ))}
                   </TabsContent>
+
+                  {paginationMeta && paginationMeta.last_page > 1 && (
+                    < CustomPagination
+                      paginationMeta={paginationMeta}
+                      search={search}
+                      filterStatus='all'
+                      onPageChange={handlePaginationChange}
+                    />
+                  )}
 
                   <TabsContent value="favorites" className="space-y-3 mt-4">
                     {favoriteProducts.map((product) => (
