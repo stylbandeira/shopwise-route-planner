@@ -15,7 +15,20 @@ interface ItensList {
   status: string;
   total: string;
   productsQuantity: number;
+  products: any;
 }
+
+// interface Product {
+//   id: number;
+//   name: string;
+//   average_price: number;
+//   category: string;
+//   isFavorite: boolean;
+//   unit: string;
+//   quantity: number;
+//   unity: string;
+//   unity_id: number;
+// }
 
 interface DashboardData {
   activeLists: number;
@@ -59,7 +72,6 @@ export function ClientDashboard() {
     const params: any = { page };
     try {
       const response = await api.get("/lists", { params });
-      console.log(dashboardData);
 
       setItensLists(response.data.itensLists);
 
