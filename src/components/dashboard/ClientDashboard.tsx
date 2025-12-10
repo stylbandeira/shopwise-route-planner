@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2 } from "lucide-react";
+import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2, Trash, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
@@ -92,8 +92,20 @@ export function ClientDashboard() {
     }
   };
 
-  const handleDelete = async (listId: number) => {
+  const handleDelete = async (listId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
 
+    if (!window.confirm('Tem certeza que deseja excluir esta lista?')) {
+      return;
+    }
+
+    try {
+      const response = await api.delete("/lists/" + listId);
+      setItensLists(prevLists => prevLists.filter(list => list.id !== listId));
+      fetchDashData();
+    } catch (error) {
+      console.log(error.message);
+    }
   }
 
   const handlePaginationChange = (page: number) => {
@@ -106,6 +118,7 @@ export function ClientDashboard() {
   };
 
   const [recentActivity] = useState([
+    // TODO - Fazer
     {
       id: 1,
       action: "Adicionou preço para Arroz Tio João 5kg",
@@ -216,6 +229,10 @@ export function ClientDashboard() {
                     >
                       {list.status === "active" ? "Concluída" : "Em Andamento"}
                     </Badge>
+
+                    <Button variant="destructive" size="sm" onClick={(e) => handleDelete(list.id, e)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))}

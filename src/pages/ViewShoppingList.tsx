@@ -152,10 +152,13 @@ export default function ViewShoppingList() {
     console.log("Compartilhando lista...");
   };
 
-  const deleteList = () => {
-    // Aqui seria implementada a funcionalidade de exclusão
-    console.log("Excluindo lista...");
-    navigate("/");
+  const handleDelete = async () => {
+    try {
+      const response = await api.delete("/lists/" + id);
+      navigate("/");
+    } catch (error) {
+      console.log(error.message);
+    }
   };
 
   return (
@@ -184,7 +187,7 @@ export default function ViewShoppingList() {
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
-            <Button variant="destructive" size="sm" onClick={deleteList}>
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
