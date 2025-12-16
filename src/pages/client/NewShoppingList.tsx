@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Search, Plus, Minus, Heart, MapPin, DollarSign } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
@@ -17,7 +17,7 @@ interface Product {
   category: string;
   isFavorite: boolean;
   unit: string;
-  quantity: number;
+  unity_quantity: number;
   unity: string;
   unity_id: number;
 }
@@ -37,9 +37,18 @@ interface SelectedItem {
   unity: string;
 }
 
-export default function NewShoppingList() {
+interface NewShoppingListProps {
+  listId?: number;
+  isEditMode?: boolean;
+}
+
+export default function NewShoppingList({ isEditMode = false, listId }: NewShoppingListProps) {
   const navigate = useNavigate();
+  const params = useParams();
+  const actualListId = listId || (params.listId ? parseInt(params.listId) : undefined);
+
   const [listName, setListName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [search, setSearch] = useState("");
@@ -49,10 +58,19 @@ export default function NewShoppingList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [listProducts, setListProducts] = useState<Product[]>([]);
 
+  // useEffect(() => {
+  //   fetchProducts();
+  // }, []);
+
   useEffect(() => {
     fetchProducts();
-    // fetchDashData();
-  }, []);
+    // console.log(actualListId);
+
+    // Se for modo edição, carrega os dados da lista
+    if (isEditMode && actualListId) {
+      fetchListData(actualListId);
+    }
+  }, [isEditMode, actualListId]);
 
   useEffect(() => {
     if (searchTimeout) {
@@ -71,6 +89,43 @@ export default function NewShoppingList() {
       }
     };
   }, [search]);
+
+  const fetchListData = async (id: number) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/lists/${id}`);
+
+      console.log(response.data.list.products);
+
+      const listData = response.data.list.products || response.data;
+      setListName(listData.name || "");
+
+      // Converter os itens da API para o formato SelectedItem
+      if (listData.items && listData.items.length > 0) {
+        const formattedItems: SelectedItem[] = listData.items.map((item: any) => ({
+          product: {
+            id: item.product_id || item.product?.id,
+            name: item.product?.name || item.name || "Produto",
+            average_price: item.price || item.product?.average_price || 0,
+            category: item.product?.category || item.category || "",
+            isFavorite: item.product?.isFavorite || false,
+            unit: item.unity || item.product?.unit || "un",
+            unity_quantity: item.product?.unity_quantity || 0,
+            unity: item.unity || item.product?.unity || "un",
+            unity_id: item.unity_id || item.product?.unity_id || 1
+          },
+          quantity: item.quantity || 1,
+          unity: item.unity || 'un'
+        }));
+
+        setSelectedItems(formattedItems);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar lista:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProducts = async (
     page: number = 1,
@@ -105,6 +160,7 @@ export default function NewShoppingList() {
 
   const addToList = (product: Product) => {
     const existingItem = selectedItems.find(item => item.product.id === product.id);
+    console.log(selectedItems);
     if (existingItem) {
       setSelectedItems(selectedItems.map(item =>
         item.product.id === product.id
@@ -129,28 +185,44 @@ export default function NewShoppingList() {
     }
   };
 
-  const updateUnit = (productId: number, newUnit: string) => {
-    setSelectedItems(selectedItems.map(item =>
-      item.product.id === productId
-        ? { ...item, unit: newUnit }
-        : item
-    ));
-  };
-
   const totalValue = selectedItems.reduce((total, item) => total + (item.product.average_price * item.quantity), 0);
 
   const saveList = async () => {
-    // Aqui seria feita a chamada para a API
+    if (!listName.trim() || selectedItems.length === 0) return;
+
+    setIsSaving(true);
+
     try {
-      const response = await api.post("/lists", { products: selectedItems, listName: listName });
+      const formattedItems = selectedItems.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unity: item.unity
+      }));
+
+      let response;
+
+      if (isEditMode && actualListId) {
+
+        response = await api.put(`/lists/${actualListId}`, {
+          name: listName,
+          items: formattedItems
+        });
+
+      } else {
+        response = await api.post("/lists", {
+          products: selectedItems,
+          listName: listName
+        });
+      }
+
     } catch (error) {
       console.log(error);
     } finally {
       navigate("/");
     }
-    // console.log("Salvando lista:", { name: listName, items: selectedItems });
-    // navigate("/");
   };
+
+  const buttonText = isEditMode ? "Atualizar Lista" : "Salvar Lista";
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,7 +246,7 @@ export default function NewShoppingList() {
             disabled={!listName || selectedItems.length === 0}
             className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
           >
-            Salvar Lista
+            {isSaving ? "Salvando..." : buttonText}
           </Button>
         </div>
 
@@ -196,69 +268,72 @@ export default function NewShoppingList() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="all" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="all">Todos os Produtos</TabsTrigger>
-                    <TabsTrigger value="favorites">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Favoritos
-                    </TabsTrigger>
-                  </TabsList>
+                {loading ? (<div className="text-center py-8">Carregando produtos...</div>
+                ) : (
+                  <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="all">Todos os Produtos</TabsTrigger>
+                      <TabsTrigger value="favorites">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Favoritos
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="all" className="space-y-3 mt-4">
-                    {products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{product.name}</h3>
-                          <span className="text-slate-400">{product.quantity + " " + product.unity}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary">{product.category}</Badge>
+                    <TabsContent value="all" className="space-y-3 mt-4">
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{product.name}</h3>
+                            <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary">{product.category}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 text-sm">
+                              <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
-                          </div>
+                          <Button onClick={() => addToList(product)} size="sm">
+                            <Plus className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button onClick={() => addToList(product)} size="sm">
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </TabsContent>
+                      ))}
+                    </TabsContent>
 
-                  {paginationMeta && paginationMeta.last_page > 1 && (
-                    < CustomPagination
-                      paginationMeta={paginationMeta}
-                      search={search}
-                      filterStatus='all'
-                      onPageChange={handlePaginationChange}
-                    />
-                  )}
+                    {paginationMeta && paginationMeta.last_page > 1 && (
+                      < CustomPagination
+                        paginationMeta={paginationMeta}
+                        search={search}
+                        filterStatus='all'
+                        onPageChange={handlePaginationChange}
+                      />
+                    )}
 
-                  <TabsContent value="favorites" className="space-y-3 mt-4">
-                    {favoriteProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{product.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary">{product.category}</Badge>
+                    <TabsContent value="favorites" className="space-y-3 mt-4">
+                      {favoriteProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{product.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary">{product.category}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 text-sm">
+                              <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
-                          </div>
+                          <Button onClick={() => addToList(product)} size="sm">
+                            <Plus className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button onClick={() => addToList(product)} size="sm">
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </TabsContent>
-                </Tabs>
+                      ))}
+                    </TabsContent>
+                  </Tabs>
+                )}
               </CardContent>
             </Card>
           </div>
