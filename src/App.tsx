@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import NewShoppingList from "./pages/NewShoppingList";
+import NewShoppingList from "./pages/client/NewShoppingList";
 import ViewShoppingList from "./pages/ViewShoppingList";
 import EmailConfirmationScreen from "./pages/EmailConfirmationScreen";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
@@ -20,6 +20,7 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import AddUser from "./pages/admin/AddUser";
 import EditUser from "./pages/admin/EditUser";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import EditShoppingList from "./pages/client/EditShoppingLIst";
 
 const queryClient = new QueryClient();
 
@@ -32,8 +33,11 @@ const App = () => (
         <UserProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            {/* LISTS */}
             <Route path="/new-list" element={<NewShoppingList />} />
+            <Route path="/list/:listId/edit" element={<EditShoppingList />} />
             <Route path="/list/:id" element={<ViewShoppingList />} />
+
             <Route path="/email-verification" element={<EmailConfirmationScreen />} />
             <Route path="/verify-email" element={<EmailVerificationPage />} />
             <Route path="/admin/companies" element={<ManageCompanies />} />
