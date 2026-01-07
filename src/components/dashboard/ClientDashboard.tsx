@@ -227,7 +227,7 @@ export function ClientDashboard() {
                     <Badge
                       variant={list.status !== "active" ? "secondary" : "default"}
                     >
-                      {list.status === "active" ? "Concluída" : "Em Andamento"}
+                      {list.status !== "active" ? "Concluída" : "Em Andamento"}
                     </Badge>
 
                     <Button variant="destructive" size="sm" onClick={(e) => handleDelete(list.id, e)}>
