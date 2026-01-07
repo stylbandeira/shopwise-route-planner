@@ -95,16 +95,14 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
       setLoading(true);
       const response = await api.get(`/lists/${id}`);
 
-      console.log(response.data.list.products);
-
       const listData = response.data.list.products || response.data;
-      setListName(listData.name || "");
+      setListName(response.data.list.name || "");
 
       // Converter os itens da API para o formato SelectedItem
-      if (listData.items && listData.items.length > 0) {
-        const formattedItems: SelectedItem[] = listData.items.map((item: any) => ({
+      if (listData && listData.length > 0) {
+        const formattedItems: SelectedItem[] = listData.map((item: any) => ({
           product: {
-            id: item.product_id || item.product?.id,
+            id: item.id || item.product?.id,
             name: item.product?.name || item.name || "Produto",
             average_price: item.price || item.product?.average_price || 0,
             category: item.product?.category || item.category || "",
