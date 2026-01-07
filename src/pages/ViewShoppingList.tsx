@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, MapPin, Clock, DollarSign, Edit, Trash2, Share2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
+import { arraysEqual } from "@/lib/utils";
 
 interface ListItem {
   id: number;
   name: string;
-  quantity: number;
+  unity_quantity: number;
   average_price: number;
   companyId: number;
   storeName?: string;
@@ -49,7 +50,7 @@ type BackendProduct = {
 
   id: number;
   name: string;
-  quantity: number;
+  unity_quantity: number;
   average_price: number;
   companyId: number;
   storeName?: string;
@@ -60,7 +61,7 @@ type BackendProduct = {
 const ensureListItem = (data: BackendProduct): ListItem => ({
   id: data.id,
   name: data.name,
-  quantity: data.quantity,
+  unity_quantity: data.unity_quantity,
   average_price: data.average_price,
   companyId: data.companyId,
   storeName: data.storeName || '',
@@ -85,6 +86,10 @@ export default function ViewShoppingList() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isOptimized, setIsOptimized] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState<number[]>([]);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const completedItemsRef = useRef<number[]>([]);
 
   const [shoppingList, setShoppingList] = useState<ShoppingList>({
     id: 0,
@@ -98,13 +103,37 @@ export default function ViewShoppingList() {
   });
 
   useEffect(() => {
+    const completedItemIds = shoppingList.products
+      .filter(item => item.completed)
+      .map(item => item.id);
+    completedItemsRef.current = completedItemIds;
+  }, [shoppingList.products]);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const response = await api.get("/lists/" + id);
-        setShoppingList(mapShoppingList(response.data.list));
+        const listData = mapShoppingList(response.data.list);
+
+        console.log(listData);
+
+        // Garantir que completed existe em cada produto
+        const productsWithCompleted = listData.products.map(product => ({
+          ...product,
+          completed: product.completed || false
+        }));
+
+        setShoppingList({
+          ...listData,
+          products: productsWithCompleted
+        });
+
         setIsOptimized(response.data.optimized);
-        console.log(response.data.list);
-        console.log(response.data.optimized);
+
+        const completedIds = productsWithCompleted
+          .filter(p => p.completed)
+          .map(p => p.id);
+        setLastSavedState(completedIds);
       } catch (error) {
         console.log(error);
       }
@@ -114,6 +143,31 @@ export default function ViewShoppingList() {
     console.log(shoppingList);
   }, []);
 
+  useEffect(() => {
+    return () => {
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'Você tem alterações não salvas. Deseja realmente sair?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
   const toggleItemComplete = (itemId: number) => {
     setShoppingList(prev => ({
       ...prev,
@@ -121,6 +175,43 @@ export default function ViewShoppingList() {
         item.id === itemId ? { ...item, completed: !item.completed } : item
       )
     }));
+
+    setHasUnsavedChanges(true);
+    debouncedSave();
+  };
+
+  const saveCompletedItems = async () => {
+    if (!hasUnsavedChanges) return;
+
+    const completedItemIds = completedItemsRef.current;
+
+    if (arraysEqual(completedItemIds, lastSavedState)) {
+      return;
+    }
+
+    console.log('Salvando checkboxes:', completedItemIds);
+
+    try {
+      const response = await api.put(`/listItems/${id}`, {
+        completed_items: completedItemIds
+      });
+
+      console.log('Salvo com sucesso:', response.data);
+      setHasUnsavedChanges(false);
+      setLastSavedState([...completedItemIds]);
+    } catch (error) {
+      console.error("Erro ao salvar checkboxes:", error);
+    }
+  };
+
+  const debouncedSave = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveCompletedItems();
+    }, 2000);
   };
 
   const completedItems = shoppingList.products.filter(item => item.completed).length;
@@ -284,7 +375,7 @@ export default function ViewShoppingList() {
                           </h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-sm text-muted-foreground">
-                              {item.quantity}
+                              {item.unity_quantity}
                               {item.unity}
                             </span>
                             <Badge variant="outline" className="text-xs">{item.category}</Badge>
@@ -292,7 +383,7 @@ export default function ViewShoppingList() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-primary">
-                            R$ {(item.average_price * item.quantity).toFixed(2)}
+                            R$ {(item.average_price * item.unity_quantity).toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {/* R$ {item.price.toFixed(2)} cada */}
@@ -302,9 +393,9 @@ export default function ViewShoppingList() {
                     ))}
                     <div className="border-t pt-3 mt-4">
                       <div className="flex justify-between items-center font-semibold">
-                        <span>Subtotal {store}:</span>
+                        <span>Subtotal:</span>
                         <span className="text-primary">
-                          R$ {products.reduce((sum, item) => sum + (item.average_price * item.quantity), 0).toFixed(2)}
+                          R$ {products.reduce((sum, item) => sum + (item.average_price * item.unity_quantity), 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
