@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2, Trash, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { QRCodeModal } from "../modals/QrcodeModal";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { CustomPagination } from "../oiai_ui/CustomPagination";
 
@@ -60,6 +61,11 @@ export function ClientDashboard() {
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showQRModal, setShowQRModal] = useState(false);
+
+  const handleQRScanClick = () => {
+    setShowQRModal(true);
+  };
 
   useEffect(() => {
     fetchItensLists();
@@ -250,6 +256,7 @@ export function ClientDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={handleQRScanClick}
               >
                 <QrCode className="w-5 h-5" />
                 Escanear Nota Fiscal
@@ -293,6 +300,19 @@ export function ClientDashboard() {
               ))}
             </CardContent>
           </Card>
+
+          <QRCodeModal
+            isOpen={showQRModal}
+            onClose={() => setShowQRModal(false)}
+            onSuccess={(data) => {
+              console.log('QR Code processado com sucesso:', data);
+              // Aqui você pode atualizar a interface ou mostrar uma mensagem
+            }}
+            onError={(error) => {
+              console.error('Erro ao processar QR Code:', error);
+              // Aqui você pode mostrar uma mensagem de erro
+            }}
+          />
         </div>
       </div>
     </div >
