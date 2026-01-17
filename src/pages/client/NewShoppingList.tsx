@@ -9,6 +9,7 @@ import { ArrowLeft, Search, Plus, Minus, Heart, MapPin, DollarSign } from "lucid
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
+import { NotificationToast } from "@/components/notification/NotificationToast";
 
 interface Product {
   id: number;
@@ -58,15 +59,9 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
   const [products, setProducts] = useState<Product[]>([]);
   const [listProducts, setListProducts] = useState<Product[]>([]);
 
-  // useEffect(() => {
-  //   fetchProducts();
-  // }, []);
 
   useEffect(() => {
     fetchProducts();
-    // console.log(actualListId);
-
-    // Se for modo edição, carrega os dados da lista
     if (isEditMode && actualListId) {
       fetchListData(actualListId);
     }
