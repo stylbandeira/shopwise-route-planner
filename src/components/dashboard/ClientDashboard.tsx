@@ -6,8 +6,7 @@ import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { QRCodeModal } from "../modals/QrcodeModal";
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { CustomPagination } from "../oiai_ui/CustomPagination";
+import { NotificationToast } from "../notification/NotificationToast";
 
 interface ItensList {
   id: number;
@@ -17,6 +16,11 @@ interface ItensList {
   total: string;
   productsQuantity: number;
   products: any;
+}
+
+interface NotificationData {
+  message: string,
+  type: string
 }
 
 // interface Product {
@@ -54,6 +58,11 @@ const defaultDashBoardData: DashboardData = {
   reputation: 0,
 }
 
+const defaultNotificationData: NotificationData = {
+  message: '',
+  type: 'success'
+}
+
 export function ClientDashboard() {
   const navigate = useNavigate();
   const [itensLists, setItensLists] = useState<ItensList[]>([]);
@@ -62,6 +71,9 @@ export function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
+
+  const [notificationData, setNotificationData] = useState<NotificationData>(defaultNotificationData);
+  const [showNotification, setShowNotification] = useState(false);
 
   const handleQRScanClick = () => {
     setShowQRModal(true);
@@ -142,6 +154,13 @@ export function ClientDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
+      {showNotification && (
+        <NotificationToast
+          message="QRCode enviado com sucesso!"
+          type="success"
+          onClose={() => setShowNotification(false)}
+        />
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-0 shadow-soft">
           <CardContent className="p-6">
@@ -305,12 +324,17 @@ export function ClientDashboard() {
             isOpen={showQRModal}
             onClose={() => setShowQRModal(false)}
             onSuccess={(data) => {
-              console.log('QR Code processado com sucesso:', data);
-              // Aqui você pode atualizar a interface ou mostrar uma mensagem
+              setShowNotification(true);
+              setNotificationData({
+                message: 'QRCode validado com sucesso!',
+                type: 'success'
+              });
             }}
             onError={(error) => {
-              console.error('Erro ao processar QR Code:', error);
-              // Aqui você pode mostrar uma mensagem de erro
+              setNotificationData({
+                message: 'QRCode inválido: ' + error,
+                type: 'success'
+              });
             }}
           />
         </div>
