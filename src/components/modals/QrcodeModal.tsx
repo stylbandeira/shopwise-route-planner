@@ -367,8 +367,7 @@ export function QRCodeModal({ isOpen, onClose, onSuccess, onError }: QRCodeModal
             onClose();
 
         } catch (err: any) {
-            console.error('Erro ao processar imagem:', err);
-            setError(err.message || 'Não foi possível ler o QR Code da imagem.');
+            setError(err.response.data.message || 'Não foi possível ler o QR Code da imagem.');
         } finally {
             setLoading(false);
             // Limpar o input file
@@ -380,36 +379,19 @@ export function QRCodeModal({ isOpen, onClose, onSuccess, onError }: QRCodeModal
 
     const sendQRCodeToBackend = async (qrData: string) => {
         try {
-
-            // Extrair apenas os parâmetros da URL se for uma URL completa
-            let dataToSend = qrData;
-
-            // Se for uma URL, tentar extrair os parâmetros
-            if (qrData.includes('?')) {
-                try {
-                    const url = new URL(qrData);
-                    const params = new URLSearchParams(url.search);
-
-                    if (params.has('p')) {
-                        dataToSend = params.get('p') || qrData;
-                    }
-                } catch (err) {
-                    console.warn('Não foi possível analisar como URL:', err);
-                }
-            }
-
-            const response = await api.post('/products/qrcode', {
-                qr_code_data: dataToSend
+            const response = await api.post('/invoice/process', {
+                qr_code_data: qrData
             });
 
             if (onSuccess) {
                 onSuccess(response.data);
             }
-
             return response.data;
+
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Erro ao processar QR Code';
-            console.error('Erro ao enviar QR Code:', err);
+            const errorMessage = err.response?.data?.error ||
+                err.response?.data?.message ||
+                'Erro ao processar nota fiscal';
             setError(errorMessage);
 
             if (onError) {
