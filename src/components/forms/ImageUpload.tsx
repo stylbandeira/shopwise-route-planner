@@ -60,7 +60,6 @@ export function ImageUpload({
             setPreviewUrl(dataUrl);
             onChange(compressedFile);
         } catch (error) {
-            console.error('Erro ao processar imagem:', error);
             alert('Erro ao processar imagem. Tente novamente.');
         } finally {
             setIsLoading(false);
