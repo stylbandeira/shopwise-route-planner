@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { QRCodeModal } from "../modals/QrcodeModal";
 import { NotificationToast } from "../notification/NotificationToast";
+import { formatarData } from "@/utils/formatters";
 
 interface ItensList {
   id: number;
@@ -23,23 +24,12 @@ interface NotificationData {
   type: string
 }
 
-// interface Product {
-//   id: number;
-//   name: string;
-//   average_price: number;
-//   category: string;
-//   isFavorite: boolean;
-//   unit: string;
-//   quantity: number;
-//   unity: string;
-//   unity_id: number;
-// }
-
 interface DashboardData {
   activeLists: number;
   points: number;
   monthEconomy: number;
   reputation: number;
+  recentActivity: [];
 }
 
 interface PaginationMeta {
@@ -51,12 +41,29 @@ interface PaginationMeta {
   to: number;
 }
 
+
+interface RecentActivity {
+  id: number;
+  description: string;
+  where: string;
+  points: number;
+}
+
+const defaultRecentActivity: RecentActivity = {
+  id: 0,
+  description: '',
+  where: '',
+  points: 0
+}
+
 const defaultDashBoardData: DashboardData = {
   activeLists: 0,
   points: 0,
   monthEconomy: 0,
   reputation: 0,
+  recentActivity: []
 }
+
 
 const defaultNotificationData: NotificationData = {
   message: '',
@@ -69,7 +76,6 @@ export function ClientDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData>(defaultDashBoardData);
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
 
   const [notificationData, setNotificationData] = useState<NotificationData>(defaultNotificationData);
@@ -134,23 +140,6 @@ export function ClientDashboard() {
     fetchItensLists(page);
     window.scrollTo(0, 0);
   };
-
-  const [recentActivity] = useState([
-    // TODO - Fazer
-    {
-      id: 1,
-      action: "Adicionou preço para Arroz Tio João 5kg",
-      store: "Supermercado ABC",
-      points: 5,
-      timestamp: "2 horas atrás"
-    },
-    {
-      id: 2,
-      action: "Concluiu lista 'Festa de Aniversário'",
-      points: 10,
-      timestamp: "1 dia atrás"
-    }
-  ]);
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -303,17 +292,17 @@ export function ClientDashboard() {
               <CardTitle>Atividade Recente</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {recentActivity.map((activity) => (
+              {dashboardData.recentActivity.map((activity) => (
                 <div key={activity.id} className="space-y-1">
-                  <p className="text-sm font-medium">{activity.action}</p>
+                  <p className="text-sm font-medium">{activity.description}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{activity.timestamp}</span>
+                    <span>{formatarData(activity.created_at)}</span>
                     <Badge variant="secondary" className="text-xs">
                       +{activity.points} pts
                     </Badge>
                   </div>
-                  {activity.store && (
-                    <p className="text-xs text-muted-foreground">{activity.store}</p>
+                  {activity.where && (
+                    <p className="text-xs text-muted-foreground">{activity.where}</p>
                   )}
                 </div>
               ))}
