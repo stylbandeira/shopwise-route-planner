@@ -33,3 +33,18 @@ export const formatCPF = (value: string): string => {
 export const removeFormatting = (value: string): string => {
     return value.replace(/\D/g, '');
 };
+
+export const formatarData = (dataISO: string): string => {
+    const meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const data = new Date(dataISO);
+
+    const dia = data.getDate();
+    const mes = meses[data.getMonth()];
+    const ano = data.getFullYear();
+
+    return `${dia} de ${mes} de ${ano}`;
+};
