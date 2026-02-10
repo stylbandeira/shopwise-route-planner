@@ -18,6 +18,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 userType={user.type}
                 userName={user.name}
                 userPoints={user.points}
+                user={user}
                 onLogout={logout}
             />
             <main>

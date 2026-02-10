@@ -2,18 +2,20 @@ import { UserType } from "@/components/auth/LoginForm";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Building2, Shield, LogOut, Star } from "lucide-react";
+import { ShoppingCart, Building2, Shield, LogOut, Star, Bell } from "lucide-react";
 import { CustomLogo } from "../oiai_ui/CustomLogo";
 
 interface DashboardHeaderProps {
   userType: UserType;
   userName: string;
   userPoints?: number;
+  user?: object;
   onLogout: () => void;
 }
 
-export function DashboardHeader({ userType, userName, userPoints, onLogout }: DashboardHeaderProps) {
+export function DashboardHeader({ userType, userName, userPoints, user, onLogout }: DashboardHeaderProps) {
   const getUserTypeInfo = (type: UserType) => {
+    console.log(user)
     switch (type) {
       case "client":
         return {
@@ -58,6 +60,13 @@ export function DashboardHeader({ userType, userName, userPoints, onLogout }: Da
             <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
               <Star className="w-4 h-4 text-secondary" />
               <span className="font-medium text-sm">{userPoints} pontos</span>
+            </div>
+          )}
+
+          {userType === "client" && user.hasNotification !== undefined && (
+            <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <Bell className="w-4 h-4 text-secondary" />
+              <span className="font-medium text-sm">{user.notifications} </span>
             </div>
           )}
 

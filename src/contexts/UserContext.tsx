@@ -8,6 +8,8 @@ interface User {
     name: string;
     email?: string;
     points?: number;
+    hasNotification: boolean;
+    notifications: number;
     token?: string;
 }
 
@@ -41,7 +43,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: response.data.user.name,
                 email: response.data.user.email,
                 points: response.data.user.points,
-                token: token
+                token: token,
+                hasNotification: response.data.user.hasNotification,
+                notifications: response.data.user.notifications,
             });
         } catch (error) {
             console.error('Failed to load user', error);
