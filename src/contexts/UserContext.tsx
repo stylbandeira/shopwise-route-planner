@@ -10,6 +10,7 @@ interface User {
     points?: number;
     hasNotification: boolean;
     notifications: number;
+    notificationList: [];
     token?: string;
 }
 
@@ -46,6 +47,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 token: token,
                 hasNotification: response.data.user.hasNotification,
                 notifications: response.data.user.notifications,
+                notificationList: response.data.user.notificationList
             });
         } catch (error) {
             console.error('Failed to load user', error);
