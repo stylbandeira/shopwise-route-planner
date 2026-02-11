@@ -6,11 +6,17 @@ import { ShoppingCart, Building2, Shield, LogOut, Star, Bell } from "lucide-reac
 import { CustomLogo } from "../oiai_ui/CustomLogo";
 import NotificationsBell from "../notification/NotificationBell";
 
+interface userType {
+  hasNotification: boolean;
+  notificationList: [];
+  notifications: number;
+}
+
 interface DashboardHeaderProps {
   userType: UserType;
   userName: string;
   userPoints?: number;
-  user?: object;
+  user?: userType;
   onLogout: () => void;
 }
 
