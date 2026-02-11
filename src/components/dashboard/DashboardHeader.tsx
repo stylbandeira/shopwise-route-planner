@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Building2, Shield, LogOut, Star, Bell } from "lucide-react";
 import { CustomLogo } from "../oiai_ui/CustomLogo";
+import NotificationsBell from "../notification/NotificationBell";
 
 interface DashboardHeaderProps {
   userType: UserType;
@@ -63,11 +64,11 @@ export function DashboardHeader({ userType, userName, userPoints, user, onLogout
             </div>
           )}
 
-          {userType === "client" && user.hasNotification !== undefined && (
-            <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
-              <Bell className="w-4 h-4 text-secondary" />
-              <span className="font-medium text-sm">{user.notifications} </span>
-            </div>
+          {userType === "client" && user.hasNotification && (
+            <NotificationsBell
+              notifications={user.notificationList || []}
+              unreadCount={user.notifications || 0}
+            />
           )}
 
           <div className="flex items-center gap-3">
