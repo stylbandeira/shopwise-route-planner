@@ -29,7 +29,7 @@ interface DashboardData {
   points: number;
   monthEconomy: number;
   reputation: number;
-  recentActivity: [];
+  recentActivity: RecentActivity[];
 }
 
 interface PaginationMeta {
@@ -44,6 +44,7 @@ interface PaginationMeta {
 
 interface RecentActivity {
   id: number;
+  created_at: string;
   description: string;
   where: string;
   points: number;
@@ -51,6 +52,7 @@ interface RecentActivity {
 
 const defaultRecentActivity: RecentActivity = {
   id: 0,
+  created_at: '',
   description: '',
   where: '',
   points: 0
