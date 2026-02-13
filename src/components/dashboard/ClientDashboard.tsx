@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2, Trash, Edit } from "lucide-react";
+import { Plus, ShoppingCart, MapPin, Star, QrCode, Receipt, Package, Table, Edit3, Trash2, Trash, Edit, Code, Library } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { QRCodeModal } from "../modals/QrcodeModal";
 import { NotificationToast } from "../notification/NotificationToast";
 import { formatarData } from "@/utils/formatters";
+import { InvoiceCodeModal } from "../modals/InvoiceCodeModal";
 
 interface ItensList {
   id: number;
@@ -79,12 +80,17 @@ export function ClientDashboard() {
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showInvoiceCodeModal, setShowInvoiceCodeModal] = useState(false);
 
   const [notificationData, setNotificationData] = useState<NotificationData>(defaultNotificationData);
   const [showNotification, setShowNotification] = useState(false);
 
   const handleQRScanClick = () => {
     setShowQRModal(true);
+  };
+
+  const handleCodeInsertClick = () => {
+    setShowInvoiceCodeModal(true);
   };
 
   useEffect(() => {
@@ -271,6 +277,16 @@ export function ClientDashboard() {
                 <QrCode className="w-5 h-5" />
                 Escanear Nota Fiscal
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-12"
+                onClick={handleCodeInsertClick}
+              >
+                <Library className="w-5 h-5" />
+                Digitar Código da NFCe
+              </Button>
+
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
@@ -324,6 +340,24 @@ export function ClientDashboard() {
             onError={(error) => {
               setNotificationData({
                 message: 'QRCode inválido: ' + error,
+                type: 'success'
+              });
+            }}
+          />
+
+          <InvoiceCodeModal
+            isOpen={showInvoiceCodeModal}
+            onClose={() => setShowInvoiceCodeModal(false)}
+            onSuccess={(data) => {
+              setShowNotification(true);
+              setNotificationData({
+                message: 'Código validado com sucesso!',
+                type: 'success'
+              });
+            }}
+            onError={(error) => {
+              setNotificationData({
+                message: 'Código inválido: ' + error,
                 type: 'success'
               });
             }}
