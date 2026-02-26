@@ -12,6 +12,13 @@ export default defineConfig(({ mode }) => ({
       usePolling: true,
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
   plugins: [
     react(),
     mode === 'development' &&
