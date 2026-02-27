@@ -9,7 +9,6 @@ import { ArrowLeft, Search, Plus, Minus, Heart, MapPin, DollarSign } from "lucid
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
-import { NotificationToast } from "@/components/notification/NotificationToast";
 
 interface Product {
   id: number;
