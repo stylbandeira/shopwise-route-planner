@@ -149,6 +149,10 @@ export function ClientDashboard() {
     window.scrollTo(0, 0);
   };
 
+  const handleAddProduct = () => {
+    navigate("/products/new");
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       {showNotification && (
@@ -290,6 +294,7 @@ export function ClientDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 h-12"
+                onClick={handleAddProduct}
               >
                 <Plus className="w-5 h-5" />
                 Adicionar Produto
