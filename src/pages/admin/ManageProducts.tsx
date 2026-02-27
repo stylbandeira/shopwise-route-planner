@@ -118,7 +118,6 @@ export default function ManageProducts() {
 
   // Efeito para resetar seleção quando mudar de aba
   useEffect(() => {
-    console.log(products);
     setSelectedProducts([]);
     setSelectAll(false);
   }, [activeTab]);
@@ -147,7 +146,6 @@ export default function ManageProducts() {
       const response = await api.get("/admin/products", { params });
       setProducts(response.data.data);
       setPaginationMeta(response.data.meta);
-      console.log(response.data);
       setCounts(response.data.counts);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
