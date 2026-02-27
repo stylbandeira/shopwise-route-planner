@@ -22,7 +22,6 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ userType, userName, userPoints, user, onLogout }: DashboardHeaderProps) {
   const getUserTypeInfo = (type: UserType) => {
-    console.log(user)
     switch (type) {
       case "client":
         return {
