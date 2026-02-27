@@ -18,6 +18,7 @@ interface ProductFormData {
     img?: File | string | null;
     unit_id?: string;
     category_id?: string;
+    ean?: string;
 }
 
 interface ProductFormProps {
@@ -36,7 +37,8 @@ const defaultProductData: ProductFormData = {
     average_price: "",
     category: "",
     unit_id: "",
-    category_id: ""
+    category_id: "",
+    ean: ""
 };
 
 export function ProductForm({
@@ -190,15 +192,27 @@ export function ProductForm({
                         </div>
                     </div>
 
-                    <FormInput
-                        label="SKU"
-                        name="sku"
-                        value={formData.sku}
-                        onChange={handleInputChange}
-                        required
-                        disabled={isLoading}
-                        error={errors.sku?.[0]}
-                    />
+                    <div className="flex gap-4">
+                        <FormInput
+                            label="SKU"
+                            name="sku"
+                            value={formData.sku}
+                            onChange={handleInputChange}
+                            required
+                            disabled={isLoading}
+                            error={errors.sku?.[0]}
+                        />
+                        <FormInput
+                            label="EAN"
+                            name="ean"
+                            type="number"
+                            value={formData.ean}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
+                            error={errors.ean?.[0]}
+                        />
+                    </div>
+
                 </div>
 
                 {/* Coluna 2 */}
