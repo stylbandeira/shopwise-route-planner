@@ -4,11 +4,15 @@ import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
 import { useState } from "react";
 import { ProductForm } from "@/components/forms/ProductForm";
+import { useNotification } from "@/contexts/NotificationContext";
+
 
 export default function AddProduct() {
     const navigate = useNavigate();
     const { user } = useUser();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { showNotification } = useNotification();
+    const [formKey, setFormKey] = useState(0);
 
     const handleSubmit = async (formData: any) => {
         console.log('Dados do formulário:', formData);
@@ -38,15 +42,16 @@ export default function AddProduct() {
                 console.log('Resposta da API:', response);
             }
 
-            navigate("/admin/products", {
-                state: {
-                    message: "Produto cadastrada com sucesso!",
-                    type: "success"
-                }
+            showNotification('Produto cadastrado com sucesso', 'success');
+
+            setFormKey(prev => prev + 1);
+
+            navigate(user.type === 'admin' ? "/admin/products/new" : "/products/new", {
+                replace: true
             });
+
+            console.log('After navigation');
         } catch (error) {
-            console.error('Erro ao cadastrar produto:', error);
-            console.error('Resposta do erro:', error.response);
 
             if (error.response?.data?.errors) {
                 throw error;
@@ -59,15 +64,18 @@ export default function AddProduct() {
     };
 
     const handleSuccess = () => {
-        navigate("/admin/products", {
-            state: { message: "Produto cadastrado com sucesso!" }
-        });
+        showNotification(
+            "Produto cadastrado com sucesso!",
+            "success",
+            5000 // duração em ms
+        );
     };
 
     return (
         <DashboardLayout>
             <div className="container mx-auto px-4 py-6">
                 <ProductForm
+                    key={formKey}
                     onSubmit={async (data) => {
                         await handleSubmit(data);
                         handleSuccess();
