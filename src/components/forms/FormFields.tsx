@@ -8,8 +8,9 @@ import { ReactNode } from "react";
 interface FormInputProps {
     label: string;
     name: string;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    value?: string;
+    checked?: boolean;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
     type?: string;
     required?: boolean;
@@ -22,6 +23,7 @@ export function FormInput({
     label,
     name,
     value,
+    checked,
     onChange,
     placeholder,
     type = "text",
@@ -30,6 +32,31 @@ export function FormInput({
     error,
     icon
 }: FormInputProps) {
+
+    if (type === "checkbox") {
+        return (
+            <div className="space-y-2 mt-5">
+                <div className="flex items-center gap-2">
+                    <Input
+                        id={name}
+                        name={name}
+                        type="checkbox"
+                        checked={checked}
+                        onChange={onChange}
+                        disabled={disabled}
+                        className="accent-green-600"
+                    />
+                    <Label htmlFor={name}>
+                        {label}
+                        {required && " *"}
+                    </Label>
+                </div>
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-2">
             <Label htmlFor={name}>{label}{required && " *"}</Label>
@@ -43,7 +70,8 @@ export function FormInput({
                     id={name}
                     name={name}
                     type={type}
-                    value={value}
+                    value={type !== "checkbox" ? value : undefined}
+                    checked={type === "checkbox" ? checked : undefined}
                     onChange={onChange}
                     placeholder={placeholder}
                     className={icon ? "pl-10" : ""}
