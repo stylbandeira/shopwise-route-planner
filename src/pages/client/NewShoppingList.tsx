@@ -205,7 +205,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
       } else {
         response = await api.post("/lists", {
           products: selectedItems,
-          listName: listName
+          name: listName
         });
       }
 

@@ -115,8 +115,6 @@ export default function ViewShoppingList() {
         const response = await api.get("/lists/" + id);
         const listData = mapShoppingList(response.data.list);
 
-        console.log(listData);
-
         // Garantir que completed existe em cada produto
         const productsWithCompleted = listData.products.map(product => ({
           ...product,
