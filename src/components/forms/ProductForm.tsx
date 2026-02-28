@@ -7,6 +7,7 @@ import { Building2 } from "lucide-react";
 import { ImageUpload } from "./ImageUpload";
 import { FormSearchSelect } from "./FormSearchSelect";
 import api from "@/lib/api";
+import { useUser } from "@/contexts/UserContext";
 
 interface ProductFormData {
     name: string;
@@ -19,6 +20,7 @@ interface ProductFormData {
     unit_id?: string;
     category_id?: string;
     ean?: string;
+    validated?: boolean;
 }
 
 interface ProductFormProps {
@@ -49,6 +51,7 @@ export function ProductForm({
     isLoading = false
 }: ProductFormProps) {
     const navigate = useNavigate();
+    const { user } = useUser();
     const [formData, setFormData] = useState<ProductFormData>(initialData);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,9 +84,15 @@ export function ProductForm({
         loadData();
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const { name, type, value, checked } = e.target;
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value
+        }));
     };
 
     const handleImageChange = (file: File | null) => {
@@ -212,6 +221,20 @@ export function ProductForm({
                             error={errors.ean?.[0]}
                         />
                     </div>
+
+                    {user.type === 'admin' && (
+                        <div className="flex gap-4">
+                            <FormInput
+                                label="Produto Validado"
+                                type="checkbox"
+                                name="validated"
+                                checked={formData.validated}
+                                onChange={handleInputChange}
+                                disabled={isLoading}
+                                error={errors.validated?.[0]}
+                            />
+                        </div>
+                    )}
 
                 </div>
 
