@@ -314,8 +314,10 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                         >
                           <div className="flex-1">
                             <h3 className="font-semibold">{product.name}</h3>
+                            <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary">{product.category}</Badge>
+                              <Badge variant="outline">{product.category}</Badge>
+                              <Badge variant={product.mentioned_quantity_variant ?? "destructive"}>Precisão: {product.mentioned_quantity}</Badge>
                             </div>
                             <div className="flex items-center gap-4 mt-2 text-sm">
                               <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
