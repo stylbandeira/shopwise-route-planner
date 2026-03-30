@@ -13,6 +13,7 @@ import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 interface Product {
   id: number;
   name: string;
+  img: string;
   average_price: number;
   category: string;
   mentioned_quantity: number;
@@ -166,6 +167,16 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
     }
   };
 
+  const handleFavorite = async (product: Product) => {
+    const favorite = product.isFavorite ? 'unfavorite' : 'favorite';
+    try {
+      await api.post(`/products/${product.id}/favorite`);
+      fetchProducts();
+    } catch (error) {
+      console.log(error)
+    }
+  };
+
   const removeFromList = (productId: number) => {
     const existingItem = selectedItems.find(item => item.product.id === productId);
     if (existingItem && existingItem.quantity > 1) {
@@ -280,7 +291,15 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                           className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                         >
                           <div className="flex-1">
-                            <h3 className="font-semibold">{product.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <img
+                                src={product.img}
+                                alt={product.img}
+                                className="w-8 h-8"
+                              />
+
+                              <h3 className="font-semibold">{product.name}</h3>
+                            </div>
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline">{product.category}</Badge>
@@ -290,6 +309,11 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                               <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
                             </div>
                           </div>
+                          <Button onClick={() => handleFavorite(product)} size="sm"
+                            className={`mr-1 ${!product.isFavorite ? 'bg-slate-200' : 'bg-secondary'}`}
+                          >
+                            <Heart className="w-4 h-4" />
+                          </Button>
                           <Button onClick={() => addToList(product)} size="sm">
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -313,7 +337,16 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                           className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                         >
                           <div className="flex-1">
-                            <h3 className="font-semibold">{product.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <img
+                                src={product.img}
+                                alt={product.img}
+                                className="w-8 h-8"
+                              />
+
+                              <h3 className="font-semibold">{product.name}</h3>
+                            </div>
+
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline">{product.category}</Badge>
@@ -323,6 +356,11 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                               <span className="font-bold text-primary">R$ {product.average_price.toFixed(2)}</span>
                             </div>
                           </div>
+                          <Button onClick={() => handleFavorite(product)} size="sm"
+                            className={`mr-1 ${!product.isFavorite ? 'bg-slate-200' : 'bg-secondary'}`}
+                          >
+                            <Heart className="w-4 h-4" />
+                          </Button>
                           <Button onClick={() => addToList(product)} size="sm">
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -403,6 +441,6 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
