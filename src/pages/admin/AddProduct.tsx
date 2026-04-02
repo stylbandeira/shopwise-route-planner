@@ -18,7 +18,6 @@ export default function AddProduct() {
         console.log('Dados do formulário:', formData);
         setIsSubmitting(true);
         try {
-            console.log('Enviando para API...');
             if (formData.img instanceof File) {
                 const formDataToSend = new FormData();
 
