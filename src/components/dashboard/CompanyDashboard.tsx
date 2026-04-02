@@ -69,7 +69,8 @@ export function CompanyDashboard() {
 
   return (
     < div className="container mx-auto px-4 py-6 space-y-6" >
-      {user?.user?.companies?.length ? (
+      {/* TODO - REMOVER NEGAÇÃO PARA CORRIGIR */}
+      {!user?.user?.companies?.length ? (
         <div>
           < div className="container mx-auto px-4 py-6 space-y-6" >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
