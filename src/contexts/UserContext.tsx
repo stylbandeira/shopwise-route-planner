@@ -12,6 +12,7 @@ interface User {
     notifications: number;
     notificationList: [];
     token?: string;
+    companies?: [];
 }
 
 interface UserContextType {
@@ -44,10 +45,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: response.data.user.name,
                 email: response.data.user.email,
                 points: response.data.user.points,
+                companies: response.data.user.companies,
                 token: token,
                 hasNotification: response.data.user.hasNotification,
                 notifications: response.data.user.notifications,
-                notificationList: response.data.user.notificationList
+                notificationList: response.data.user.notificationList,
             });
         } catch (error) {
             console.error('Failed to load user', error);
