@@ -1,260 +1,318 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, MapPin, Clock, DollarSign, Edit, Trash2, Share2 } from "lucide-react";
+import { ArrowLeft, MapPin, DollarSign, Edit, Trash2, Share2, Package, Store } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
-import { arraysEqual } from "@/lib/utils";
 
-interface ListItem {
+interface Product {
   id: number;
   name: string;
-  unity_quantity: number;
   average_price: number;
-  companyId: number;
-  storeName?: string;
-  storeAddress?: string;
-  category: string;
-  unity: string;
-  completed: boolean;
+  quantity: number;
+  unity_quantity?: number;
+  unity?: {
+    id: number;
+    abbreviation: string;
+    name: string;
+  };
+  category?: {
+    id: number;
+    name: string;
+  };
+  img: string | null;
+  ean: string;
+  description: string;
+  completed?: boolean;
 }
 
-interface ShoppingListAPIResponse {
-  id: number;
-  favorite: boolean;
-  name: string;
-  optimized: boolean;
-  products: ListItem[];
-  status: string;
-  total: number;
-  created_at: string;
+interface CompanyProduct {
+  product: Product;
+  average_price: number;
+}
+
+interface CompanyGroup {
+  company: {
+    id: number;
+    name: string;
+    raw_address: string;
+  };
+  products: CompanyProduct[];
 }
 
 interface ShoppingList {
   id: number;
+  name: string;
   favorite: boolean;
-  name: string;
   optimized: boolean;
-  products: ListItem[];
-  totalValue: number;
   status: string;
-  createdAt: string;
+  total: number;
+  created_at: string;
+  companies: Record<string, CompanyGroup> | [];
+  products?: Product[];
+  productsQuantity: number;
 }
-
-type BackendProduct = {
-  category?: string;
-  unity?: string;
-  completed?: boolean;
-
-  id: number;
-  name: string;
-  unity_quantity: number;
-  average_price: number;
-  companyId: number;
-  storeName?: string;
-  storeAddress?: string;
-  // ... outros campos que podem vir
-};
-
-const ensureListItem = (data: BackendProduct): ListItem => ({
-  id: data.id,
-  name: data.name,
-  unity_quantity: data.unity_quantity,
-  average_price: data.average_price,
-  companyId: data.companyId,
-  storeName: data.storeName || '',
-  storeAddress: data.storeAddress || '',
-  completed: data.completed,
-  category: data.category,
-  unity: data.unity,
-});
-
-const mapShoppingList = (apiData: ShoppingListAPIResponse): ShoppingList => ({
-  id: apiData.id,
-  favorite: apiData.favorite,
-  name: apiData.name,
-  optimized: apiData.optimized,
-  products: apiData.products.map(ensureListItem),
-  status: apiData.status,
-  totalValue: apiData.total,
-  createdAt: apiData.created_at
-});
 
 export default function ViewShoppingList() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [isOptimized, setIsOptimized] = useState(false);
+  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSavedState, setLastSavedState] = useState<number[]>([]);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const completedItemsRef = useRef<number[]>([]);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
-  const [shoppingList, setShoppingList] = useState<ShoppingList>({
-    id: 0,
-    favorite: false,
-    name: '',
-    optimized: false,
-    products: [],
-    totalValue: 0,
-    status: '',
-    createdAt: '',
-  });
+  // ARMAZENA AS QUANTIDADES ORIGINAIS (vindas de list.products)
+  const [originalQuantities, setOriginalQuantities] = useState<Map<number, number>>(new Map());
 
-  useEffect(() => {
-    const completedItemIds = shoppingList.products
-      .filter(item => item.completed)
-      .map(item => item.id);
-    completedItemsRef.current = completedItemIds;
-  }, [shoppingList.products]);
+  const getProductUnity = (product: any): string => {
+    if (product.unity?.abbreviation) return product.unity.abbreviation;
+    if (product.unity?.name) return product.unity.name;
+    if (product.unity && typeof product.unity === 'string') return product.unity;
+    return 'un';
+  };
 
+  const getProductCategory = (product: any): string => {
+    if (product.category?.name) return product.category.name;
+    if (typeof product.category === 'string') return product.category;
+    return 'Produto';
+  };
+
+  const getProductQuantity = (product: any): number => {
+    return product.quantity || product.unity_quantity || 1;
+  };
+
+  // Carregar dados
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await api.get("/lists/" + id);
-        const listData = mapShoppingList(response.data.list);
+        setLoading(true);
+        const response = await api.get(`/lists/${id}`);
+        const data = response.data.list;
 
-        // Garantir que completed existe em cada produto
-        const productsWithCompleted = listData.products.map(product => ({
-          ...product,
-          completed: product.completed || false
-        }));
+        // SALVA AS QUANTIDADES ORIGINAIS (de list.products)
+        const quantitiesMap = new Map<number, number>();
+        if (data.products && data.products.length > 0) {
+          data.products.forEach((product: Product) => {
+            const quantity = getProductQuantity(product);
+            quantitiesMap.set(product.id, quantity);
+          });
+        }
+        setOriginalQuantities(quantitiesMap);
 
         setShoppingList({
-          ...listData,
-          products: productsWithCompleted
+          id: data.id,
+          name: data.name,
+          favorite: data.favorite,
+          optimized: data.optimized,
+          status: data.status,
+          total: data.total,
+          created_at: data.created_at,
+          companies: data.companies || [],
+          products: data.products || [],
+          productsQuantity: data.productsQuantity,
         });
 
-        setIsOptimized(response.data.optimized);
+        if (data.products && data.products.length > 0) {
+          const completed = data.products
+            .filter((p: Product) => p.completed)
+            .map((p: Product) => p.id);
+          setCompletedItems(new Set(completed));
+        }
 
-        const completedIds = productsWithCompleted
-          .filter(p => p.completed)
-          .map(p => p.id);
-        setLastSavedState(completedIds);
+        setLoading(false);
       } catch (error) {
-        console.log(error);
+        console.error("Erro ao carregar lista:", error);
+        setLoading(false);
       }
-    }
+    };
 
     loadData();
-    console.log(shoppingList);
-  }, []);
+  }, [id]);
 
-  useEffect(() => {
-    return () => {
-
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [hasUnsavedChanges]);
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = 'Você tem alterações não salvas. Deseja realmente sair?';
-        return e.returnValue;
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
-
-  const toggleItemComplete = (itemId: number) => {
-    setShoppingList(prev => ({
-      ...prev,
-      products: prev.products.map(item =>
-        item.id === itemId ? { ...item, completed: !item.completed } : item
-      )
-    }));
-
-    setHasUnsavedChanges(true);
-    debouncedSave();
-  };
-
-  const saveCompletedItems = async () => {
+  const saveCompletedItems = useCallback(async () => {
     if (!hasUnsavedChanges) return;
 
-    const completedItemIds = completedItemsRef.current;
-
-    if (arraysEqual(completedItemIds, lastSavedState)) {
-      return;
-    }
-
-    console.log('Salvando checkboxes:', completedItemIds);
-
     try {
-      const response = await api.put(`/listItems/${id}`, {
-        completed_items: completedItemIds
+      await api.put(`/listItems/${id}`, {
+        completed_items: Array.from(completedItems)
       });
-
-      console.log('Salvo com sucesso:', response.data);
       setHasUnsavedChanges(false);
-      setLastSavedState([...completedItemIds]);
     } catch (error) {
-      console.error("Erro ao salvar checkboxes:", error);
+      console.error("Erro ao salvar:", error);
+    }
+  }, [completedItems, hasUnsavedChanges, id]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const timer = setTimeout(() => saveCompletedItems(), 2000);
+    return () => clearTimeout(timer);
+  }, [completedItems, hasUnsavedChanges, saveCompletedItems]);
+
+  const toggleItemComplete = (productId: number) => {
+    setCompletedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const hasCompanies = () => {
+    return shoppingList?.companies &&
+      Array.isArray(shoppingList.companies) === false &&
+      Object.keys(shoppingList.companies).length > 0;
+  };
+
+  const getDirectProducts = (): Product[] => {
+    if (hasCompanies()) return [];
+    return shoppingList?.products || [];
+  };
+
+  // FUNÇÃO CORRETÍSSIMA: calcula total usando SEMPRE as quantidades originais
+  const calculateTotalWithOriginalQuantities = (products: CompanyProduct[]) => {
+    return products.reduce((sum, item) => {
+      const productId = item.product.id;
+      const quantity = originalQuantities.get(productId) || 1; // USA A QUANTIDADE ORIGINAL
+      const price = item.average_price;
+      return sum + (price * quantity);
+    }, 0);
+  };
+
+  // Para quando NÃO tem companies (lista simples)
+  const calculateDirectProductsTotal = (products: Product[]) => {
+    return products.reduce((sum, product) => {
+      const quantity = getProductQuantity(product);
+      const price = product.average_price || 0;
+      return sum + (price * quantity);
+    }, 0);
+  };
+
+  const calculateCompletedCount = (products: CompanyProduct[]) => {
+    return products.filter(item => completedItems.has(item.product.id)).length;
+  };
+
+  const getTotalProgress = () => {
+    if (!shoppingList) return 0;
+
+    let allProducts: Product[] = [];
+
+    if (hasCompanies()) {
+      const companiesObj = shoppingList.companies as Record<string, CompanyGroup>;
+      allProducts = Object.values(companiesObj).flatMap(
+        group => group.products.map(p => p.product)
+      );
+    } else {
+      allProducts = shoppingList.products || [];
+    }
+
+    if (allProducts.length === 0) return 0;
+    return (completedItems.size / allProducts.length) * 100;
+  };
+
+  // VALOR ATUAL OTIMIZADO (usa quantidades originais + preços otimizados)
+  const getOptimizedTotalValue = () => {
+    if (!shoppingList) return 0;
+
+    if (hasCompanies()) {
+      const companiesObj = shoppingList.companies as Record<string, CompanyGroup>;
+      let total = 0;
+      Object.values(companiesObj).forEach(group => {
+        total += calculateTotalWithOriginalQuantities(group.products);
+      });
+      return total;
+    } else {
+      return calculateDirectProductsTotal(shoppingList.products || []);
     }
   };
 
-  const debouncedSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveCompletedItems();
-    }, 2000);
+  // VALOR SEM OTIMIZAR (usa quantidades originais + preços originais de list.products)
+  const getUnoptimizedTotalValue = () => {
+    if (!shoppingList) return 0;
+    return calculateDirectProductsTotal(shoppingList.products || []);
   };
-
-  const completedItems = shoppingList.products.filter(item => item.completed).length;
-  const totalItems = shoppingList.products.length;
-  const progress = (completedItems / totalItems) * 100;
-
-  // Agrupar itens por loja
-  const itemsByStore = shoppingList.products.reduce((acc, item) => {
-    if (!acc[item.companyId]) {
-      acc[item.companyId] = [];
-    }
-    acc[item.companyId].push(item);
-    return acc;
-  }, {} as Record<string, ListItem[]>);
 
   const optimizeRoute = async () => {
-    const data = { optimized: true };
-    try {
-      const response = await api.put("/lists/" + id, data);
-      setIsOptimized(response.data.list.optimized);
-    } catch (error) {
-      console.log(error);
-    }
-    console.log("Otimizando rota...");
-  };
+    if (isOptimizing) return;
 
-  const shareList = () => {
-    // Aqui seria implementada a funcionalidade de compartilhamento
-    console.log("Compartilhando lista...");
+    setIsOptimizing(true);
+    try {
+      await api.post(`/lists/${id}/optimize`, { optimized: true });
+
+      const reloadResponse = await api.get(`/lists/${id}`);
+      const newData = reloadResponse.data.list;
+
+      setShoppingList({
+        id: newData.id,
+        name: newData.name,
+        favorite: newData.favorite,
+        optimized: newData.optimized,
+        status: newData.status,
+        total: newData.total,
+        created_at: newData.created_at,
+        companies: newData.companies || [],
+        products: newData.products || [],
+        productsQuantity: newData.productsQuantity,
+      });
+
+    } catch (error) {
+      console.error("Erro ao otimizar:", error);
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
   const handleDelete = async () => {
     try {
-      const response = await api.delete("/lists/" + id);
+      await api.delete(`/lists/${id}`);
       navigate("/");
     } catch (error) {
-      console.log(error.message);
+      console.error("Erro ao deletar:", error);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-12 h-12 animate-pulse mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando lista...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!shoppingList) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Lista não encontrada</p>
+          <Button onClick={() => navigate("/")} className="mt-4">
+            Voltar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasCompaniesData = hasCompanies();
+  const totalProgress = getTotalProgress();
+  const optimizedTotal = getOptimizedTotalValue();
+  const unoptimizedTotal = getUnoptimizedTotalValue();
+  const totalItems = shoppingList.productsQuantity;
+  const directProducts = getDirectProducts();
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -263,12 +321,12 @@ export default function ViewShoppingList() {
             <div>
               <h1 className="text-2xl font-bold">{shoppingList.name}</h1>
               <p className="text-sm text-muted-foreground">
-                Criada em {new Date(shoppingList.createdAt).toLocaleDateString('pt-BR')}
+                Criada em {new Date(shoppingList.created_at).toLocaleDateString('pt-BR')}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={shareList}>
+            <Button variant="outline" size="sm">
               <Share2 className="w-4 h-4 mr-2" />
               Compartilhar
             </Button>
@@ -282,126 +340,245 @@ export default function ViewShoppingList() {
           </div>
         </div>
 
-        {/* Progress and Stats */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-soft">
+          <Card className="border-0 shadow-lg bg-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  {/* <p className="text-2xl font-bold">R$ {shoppingList.totalValue.toFixed(2)}</p> */}
+                  <p className="text-2xl font-bold">R$ {optimizedTotal.toFixed(2)}</p>
                   <p className="text-sm text-muted-foreground">Valor Total</p>
+                  {shoppingList.optimized && unoptimizedTotal > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1 line-through">
+                      Sem otimizar: R$ {unoptimizedTotal.toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-soft">
+          <Card className="border-0 shadow-lg bg-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-secondary" />
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Package className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">TODO - min</p>
-                  <p className="text-sm text-muted-foreground">Tempo Estimado</p>
+                  <p className="text-2xl font-bold">{completedItems.size}/{totalItems}</p>
+                  <p className="text-sm text-muted-foreground">Itens Comprados</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-soft">
+          <Card className="border-0 shadow-lg bg-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-lg font-bold">{Math.round(progress)}%</span>
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <span className="text-lg font-bold text-purple-600">{Math.round(totalProgress)}%</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{completedItems}/{totalItems}</p>
-                  <p className="text-sm text-muted-foreground">Progresso</p>
+                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all duration-300"
+                      style={{ width: `${totalProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">Progresso</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-soft">
+          <Card className="border-0 shadow-lg bg-white">
             <CardContent className="p-6">
               <Button
                 onClick={optimizeRoute}
-                className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
+                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
+                disabled={shoppingList.optimized || isOptimizing}
               >
                 <MapPin className="w-4 h-4 mr-2" />
-                Otimizar Rota
+                {isOptimizing ? "Otimizando..." : (shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota")}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Items by Store */}
+        {/* Products List */}
         <div className="space-y-6">
-          {Object.entries(itemsByStore).map(([store, products]) => (
-            <Card key={store} className="border-0 shadow-soft">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  {isOptimized ? <span>{store}</span> : <span>Lista</span>}
-                  <Badge variant="secondary">
-                    {products.filter(item => item.completed).length}/{products.length} concluídos
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              {products.length && (
-                <>
-                  <CardContent className="space-y-3">
-                    {products.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-center gap-4 p-4 rounded-lg transition-all ${item.completed
-                          ? 'bg-muted/50 opacity-75'
-                          : 'bg-muted/30 hover:bg-muted/50'
-                          }`}
-                      >
-                        <Checkbox
-                          checked={item.completed}
-                          onCheckedChange={() => toggleItemComplete(item.id)}
-                          className="flex-shrink-0"
-                        />
-                        <div className="flex-1">
-                          <h3 className={`font-semibold ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-muted-foreground">
-                              {item.unity_quantity}
-                              {item.unity}
-                            </span>
-                            <Badge variant="outline" className="text-xs">{item.category}</Badge>
-                          </div>
+          {hasCompaniesData ? (
+            Object.values(shoppingList.companies as Record<string, CompanyGroup>).map((group) => {
+              // CALCULA O SUBTOTAL DA EMPRESA COM AS QUANTIDADES ORIGINAIS
+              const companyTotal = calculateTotalWithOriginalQuantities(group.products);
+              const companyCompleted = calculateCompletedCount(group.products);
+
+              return (
+                <Card key={group.company.id} className="border-0 shadow-lg overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+                    <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <Store className="w-5 h-5 text-primary" />
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-primary">
-                            R$ {(item.average_price * item.unity_quantity).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {/* R$ {item.price.toFixed(2)} cada */}
-                          </p>
+                        <div>
+                          <h3 className="text-lg font-semibold">{group.company.name}</h3>
+                          {group.company.raw_address && (
+                            <p className="text-xs text-muted-foreground">{group.company.raw_address}</p>
+                          )}
                         </div>
                       </div>
-                    ))}
-                    <div className="border-t pt-3 mt-4">
+                      <Badge variant="secondary" className="text-sm">
+                        {companyCompleted}/{group.products.length} concluídos
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent className="p-6 space-y-3">
+                    {group.products.map((item) => {
+                      const product = item.product;
+                      const unity = getProductUnity(product);
+                      const category = getProductCategory(product);
+                      // USA A QUANTIDADE ORIGINAL
+                      const quantity = originalQuantities.get(product.id) || getProductQuantity(product);
+
+                      return (
+                        <div
+                          key={product.id}
+                          className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
+                            ? 'bg-gray-50 opacity-75'
+                            : 'bg-white hover:shadow-md border border-gray-100'
+                            }`}
+                        >
+                          <Checkbox
+                            checked={completedItems.has(product.id)}
+                            onCheckedChange={() => toggleItemComplete(product.id)}
+                            className="flex-shrink-0"
+                          />
+
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
+                              }`}>
+                              {product.name}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="text-sm text-muted-foreground">
+                                {quantity} {unity}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {category}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold text-primary">
+                              R$ {(item.average_price * quantity).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              R$ {item.average_price.toFixed(2)}/{unity}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="border-t pt-4 mt-4">
                       <div className="flex justify-between items-center font-semibold">
-                        <span>Subtotal:</span>
-                        <span className="text-primary">
-                          R$ {products.reduce((sum, item) => sum + (item.average_price * item.unity_quantity), 0).toFixed(2)}
-                        </span>
+                        <span>Subtotal</span>
+                        <span className="text-primary text-lg">R$ {companyTotal.toFixed(2)}</span>
                       </div>
                     </div>
                   </CardContent>
-                </>
-              )}
+                </Card>
+              );
+            })
+          ) : directProducts.length > 0 ? (
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+                <CardTitle>
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-primary" />
+                    <span>Produtos</span>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="p-6 space-y-3">
+                {directProducts.map((product) => {
+                  const unity = getProductUnity(product);
+                  const category = getProductCategory(product);
+                  const quantity = getProductQuantity(product);
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
+                        ? 'bg-gray-50 opacity-75'
+                        : 'bg-white hover:shadow-md border border-gray-100'
+                        }`}
+                    >
+                      <Checkbox
+                        checked={completedItems.has(product.id)}
+                        onCheckedChange={() => toggleItemComplete(product.id)}
+                        className="flex-shrink-0"
+                      />
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
+                          }`}>
+                          {product.name}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <span className="text-sm text-muted-foreground">
+                            {quantity} {unity}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {category}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-primary">
+                          R$ {((product.average_price || 0) * quantity).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          R$ {(product.average_price || 0).toFixed(2)}/{unity}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex justify-between items-center font-semibold">
+                    <span>Total</span>
+                    <span className="text-primary text-lg">R$ {calculateDirectProductsTotal(directProducts).toFixed(2)}</span>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
-          ))}
+          ) : (
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+                <CardTitle>
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-primary" />
+                    <span>Lista de Compras</span>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum item encontrado nesta lista
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Actions */}
@@ -414,14 +591,10 @@ export default function ViewShoppingList() {
             Editar Lista
           </Button>
           <Button
-            className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
-            onClick={() => {
-              setShoppingList(prev => ({ ...prev, status: "concluida" }));
-              // Aqui seria feita a chamada para a API
-            }}
-            disabled={shoppingList.status === "concluida"}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
+            disabled={shoppingList.status === "completed"}
           >
-            {shoppingList.status === "concluida" ? "Lista Concluída" : "Marcar como Concluída"}
+            {shoppingList.status === "completed" ? "Lista Concluída" : "Marcar como Concluída"}
           </Button>
         </div>
       </div>
