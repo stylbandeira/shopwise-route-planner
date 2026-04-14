@@ -168,6 +168,20 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
     }
   };
 
+  const setProductQuantity = (addQuantity, product: Product) => {
+    const existingItem = selectedItems.find(item => item.product.id === product.id);
+    console.log(selectedItems);
+    if (existingItem) {
+      setSelectedItems(selectedItems.map(item =>
+        item.product.id === product.id
+          ? { ...item, quantity: addQuantity }
+          : item
+      ));
+    } else {
+      setSelectedItems([...selectedItems, { product, quantity: 1, unity: product.unity }]);
+    }
+  };
+
   const handleFavorite = async (product: Product) => {
     const favorite = product.isFavorite ? 'unfavorite' : 'favorite';
     try {
@@ -396,6 +410,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                       <div key={item.product.id} className="space-y-2 p-3 bg-muted/50 rounded-lg">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-sm">{item.product.name}</h4>
+
                           <Button
                             variant="ghost"
                             size="sm"
@@ -405,6 +420,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                             <Minus className="w-3 h-3" />
                           </Button>
                         </div>
+
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <Button
@@ -415,7 +431,19 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                            <span className="min-w-[2rem] text-center text-sm">{item.quantity}</span>
+
+                            <Input
+                              placeholder="1,00"
+                              value={item.quantity.toFixed(2).replace('.', ',')}
+                              type="text"
+                              onChange={(e) => setProductQuantity(
+                                parseFloat(e.target.value.replace(',', '.')) || 0,
+                                item.product
+                              )}
+                              className="text-lg font-semibold border-1 bg-slate-200 p-auto m-auto focus-visible:ring-0"
+                            />
+                            <span className="text-gray-600">{item.unity}</span>
+
                             <Button
                               variant="outline"
                               size="sm"
@@ -426,8 +454,12 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                             </Button>
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          R$ {(item.product.average_price * item.quantity).toFixed(2)}
+
+                        <div className=" text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
+                            R$ {(item.product.average_price).toFixed(2)}
+                          </div>
+                          <b>Total</b>: R$ {(item.product.average_price * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     ))}
