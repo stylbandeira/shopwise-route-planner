@@ -84,6 +84,14 @@ export default function ViewShoppingList() {
     return product.quantity || product.unity_quantity || 1;
   };
 
+  const handleCompleteList = async () => {
+    const response = await api.put(`/lists/${id}`, {
+      status: 'completed'
+    });
+
+    window.location.reload();
+  }
+
   // Carregar dados
   useEffect(() => {
     const loadData = async () => {
@@ -593,6 +601,7 @@ export default function ViewShoppingList() {
           <Button
             className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
             disabled={shoppingList.status === "completed"}
+            onClick={handleCompleteList}
           >
             {shoppingList.status === "completed" ? "Lista Concluída" : "Marcar como Concluída"}
           </Button>
