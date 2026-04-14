@@ -134,7 +134,6 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
       if (searchTerm) params.search = searchTerm;
 
       const response = await api.get("/products", { params });
-      console.log(response.data.data)
       setProducts(response.data.data);
       setPaginationMeta(response.data.meta);
     } catch (error) {
