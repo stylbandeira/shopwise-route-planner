@@ -304,7 +304,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                             </div>
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary">Empresas: {product.companies_count}</Badge>
+                              <Badge variant="secondary">Empresas: {product.companies_count > 99 ? '99+' : product.companies_count}</Badge>
                               <Badge variant="outline">{product.category}</Badge>
                               <Badge variant={product.mentioned_quantity_variant ?? "destructive"}>Precisão: {product.mentioned_quantity}</Badge>
                             </div>
@@ -352,7 +352,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
 
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary">Empresas: {product.companies_count}</Badge>
+                              <Badge variant="secondary">Empresas: {product.companies_count > 99 ? '99+' : product.companies_count}</Badge>
                               <Badge variant="outline">{product.category}</Badge>
                               <Badge variant={product.mentioned_quantity_variant ?? "destructive"}>Precisão: {product.mentioned_quantity}</Badge>
                             </div>
