@@ -17,6 +17,7 @@ interface Product {
   average_price: number;
   category: string;
   mentioned_quantity: number;
+  companies_count: number;
   mentioned_quantity_variant: string;
   isFavorite: boolean;
   unit: string;
@@ -133,6 +134,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
       if (searchTerm) params.search = searchTerm;
 
       const response = await api.get("/products", { params });
+      console.log(response.data.data)
       setProducts(response.data.data);
       setPaginationMeta(response.data.meta);
     } catch (error) {
@@ -302,6 +304,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
                             </div>
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary">Empresas: {product.companies_count}</Badge>
                               <Badge variant="outline">{product.category}</Badge>
                               <Badge variant={product.mentioned_quantity_variant ?? "destructive"}>Precisão: {product.mentioned_quantity}</Badge>
                             </div>
@@ -349,6 +352,7 @@ export default function NewShoppingList({ isEditMode = false, listId }: NewShopp
 
                             <span className="text-slate-400">{product.unity_quantity + " " + product.unity}</span>
                             <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary">Empresas: {product.companies_count}</Badge>
                               <Badge variant="outline">{product.category}</Badge>
                               <Badge variant={product.mentioned_quantity_variant ?? "destructive"}>Precisão: {product.mentioned_quantity}</Badge>
                             </div>
