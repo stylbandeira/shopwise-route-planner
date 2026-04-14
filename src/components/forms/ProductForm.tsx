@@ -222,6 +222,19 @@ export function ProductForm({
                         />
                     </div>
 
+                    <div className="flex-1">
+                        <FormInput
+                            label="Preço"
+                            name="average_price"
+                            type="number"
+                            value={formData.average_price}
+                            onChange={handleInputChange}
+                            required
+                            disabled={isLoading}
+                            error={errors.average_price?.[0]}
+                        />
+                    </div>
+
                     {user.type === 'admin' && (
                         <div className="flex gap-4">
                             <FormInput
