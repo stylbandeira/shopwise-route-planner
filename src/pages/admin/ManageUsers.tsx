@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, Filter, Edit3, Trash2, Star, Plus, ArrowLeft, Trash, ArchiveRestore, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
+// src/pages/admin/ManageUsers.tsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Users, Star, Edit3, Trash2, ArchiveRestore, Download, Plus, Mail, Calendar, UserCircle } from "lucide-react";
 import api from "@/lib/api";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { TableFilters } from "@/components/admin/TableFilters";
+import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
+import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface User {
   id: number;
@@ -20,360 +23,305 @@ interface User {
   reputation: number;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
-  deleted_at: string;
+  deleted_at: string | null;
 }
-
-type SortField = 'reputation' | 'points' | 'name' | 'created_at' | '';
-type SortOrder = 'asc' | 'desc';
 
 export default function ManageUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [paginationMeta, setPaginationMeta] = useState<any>(null);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [sortField, setSortField] = useState<SortField>('');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  const typeOptions = [
+    { value: "client", label: "Cliente" },
+    { value: "company", label: "Empresa" },
+    { value: "admin", label: "Administrador" }
+  ];
+
+  const statusOptions = [
+    { value: "active", label: "Ativo" },
+    { value: "inactive", label: "Inativo" },
+    { value: "suspended", label: "Suspenso" }
+  ];
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [search, filterType, filterStatus]);
 
-  useEffect(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      fetchUsers(1, search, filterStatus, filterType); // 🎯 BUSCA NOVAMENTE
-    }, 500);
-
-    setSearchTimeout(timeout);
-
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, [search, filterStatus, filterType, sortField, sortOrder]);
-
-  const fetchUsers = async (page: number = 1, searchTerm: string = search, status: string = filterStatus, type: string = filterType) => {
+  const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
       const params: any = { page };
-
-      if (searchTerm) params.search = searchTerm;
-      if (status !== "all") params.status = status;
-      if (type !== "all") params.type = type;
-
-      if (sortField) {
-        params.sort_by = sortField;
-        params.sort_order = sortOrder;
-      }
+      if (search) params.search = search;
+      if (filterType !== "all") params.type = filterType;
+      if (filterStatus !== "all") params.status = filterStatus;
 
       const response = await api.get("/admin/users", { params });
-      if (response.data.data && Array.isArray(response.data.data)) {
-        setUsers(response.data.data);
-      } else {
-        setUsers([]);
-      }
-
-      setPaginationMeta(response.data.meta || {});
-
-    } catch (error: any) {
-      setUsers([]);
+      setUsers(response.data.data || []);
+      setPaginationMeta(response.data.meta);
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
+  const handleDelete = async (user: User) => {
+    try {
+      if (user.deleted_at) {
+        await api.post(`admin/users/revertDeleted/${user.id}`);
+      } else {
+        await api.delete(`admin/users/${user.id}`);
+      }
+      fetchUsers();
+    } catch (error) {
+      console.error("Erro ao deletar/restaurar usuário:", error);
     }
   };
 
   const handleExport = async () => {
     try {
-
-      const params: any = {};
-
-      if (search) params.search = search;
-      if (filterType !== "all") params.type = filterType;
-      if (filterStatus !== "all") params.status = filterStatus;
-      if (sortField) {
-        params.sort_by = sortField;
-        params.sort_order = sortOrder;
-      }
-
       const response = await api.get("/admin/users/export", {
-        responseType: 'blob',
-        params: params
+        params: { search, type: filterType, status: filterStatus },
+        responseType: 'blob'
       });
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `usuarios_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
+      link.download = `usuarios_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       link.remove();
-
-      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erro ao exportar usuários:', error);
-      alert('Erro ao exportar usuários');
+      console.error("Erro ao exportar:", error);
     }
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4" />;
-    }
-    return sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
-  };
-
-  const handleDelete = async (user: User) => {
-    try {
-      if (!(user.deleted_at === null || user.deleted_at === '')) {
-        const response = await api.post(`admin/users/revertDeleted/${user.id}`);
-      } else {
-        const response = await api.delete(`admin/users/${user.id}`);
-      }
-      fetchUsers();
-    } catch (error) {
-      console.error('Erro ao deletar usuário', error);
-    }
-  }
-
-  const getTypeLabel = (type: string) => {
-    const labels = {
-      'client': 'Cliente',
-      'company': 'Empresa',
-      'admin': 'Administrador'
+  const getTypeColor = (type: string) => {
+    const colors = {
+      client: "bg-blue-100 text-blue-700",
+      company: "bg-purple-100 text-purple-700",
+      admin: "bg-red-100 text-red-700"
     };
-    return labels[type as keyof typeof labels] || type;
+    return colors[type as keyof typeof colors] || "bg-gray-100";
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, deletedAt?: string | null) => {
+    if (deletedAt) {
+      return <Badge variant="secondary">Excluído</Badge>;
+    }
+
     const variants = {
-      'active': 'default',
-      'inactive': 'secondary',
-      'suspended': 'destructive'
+      active: { variant: "default" as const, label: "Ativo" },
+      inactive: { variant: "secondary" as const, label: "Inativo" },
+      suspended: { variant: "destructive" as const, label: "Suspenso" }
     };
-    const labels = {
-      'active': 'Ativo',
-      'inactive': 'Inativo',
-      'suspended': 'Suspenso'
-    };
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] as any}>
-        {labels[status as keyof typeof labels]}
-      </Badge>
-    );
+    const config = variants[status as keyof typeof variants];
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-              <p className="text-muted-foreground">
-                Gerencie todos os usuários da plataforma
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={handleExport}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
+  const getInitials = (name: string) => {
+    return name.split(' ').map(word => word[0]).slice(0, 2).join('').toUpperCase();
+  };
 
-            <Button
-              onClick={() => navigate('/admin/users/new')}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Usuário
-            </Button>
+  const columns = [
+    { key: "name", header: "Usuário", className: "min-w-[200px]" },
+    { key: "type", header: "Tipo", className: "w-24" },
+    { key: "points", header: "Pontos", className: "w-20" },
+    { key: "reputation", header: "Reputação", className: "w-24" },
+    { key: "status", header: "Status", className: "w-24" },
+    { key: "created_at", header: "Cadastro", className: "w-32" },
+    { key: "actions", header: "Ações", className: "w-24 text-right" }
+  ];
+
+  const renderDesktopRow = (user: User) => ({
+    name: (
+      <div>
+        <p className="font-medium">{user.name}</p>
+        <p className="text-xs text-muted-foreground">{user.email}</p>
+      </div>
+    ),
+    type: <Badge variant="outline" className={getTypeColor(user.type)}>{user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}</Badge>,
+    points: user.type === 'client' ? user.points.toLocaleString() : '-',
+    reputation: (
+      <div className="flex items-center gap-1">
+        <Star className="w-3 h-3 fill-secondary text-secondary" />
+        <span>{user.reputation}</span>
+      </div>
+    ),
+    status: getStatusBadge(user.status, user.deleted_at),
+    created_at: new Date(user.created_at).toLocaleDateString('pt-BR'),
+    actions: (
+      <div className="flex items-center justify-end gap-1">
+        <Button variant="ghost" size="icon" disabled={!!user.deleted_at} onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="h-8 w-8">
+          <Edit3 className="w-4 h-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => handleDelete(user)} className="h-8 w-8 text-destructive hover:text-destructive">
+          {user.deleted_at ? <ArchiveRestore className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+        </Button>
+      </div>
+    )
+  });
+
+  const renderMobileCard = (user: User) => (
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedUser(user)}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Avatar className="h-12 w-12">
+              <AvatarFallback className={getTypeColor(user.type)}>{getInitials(user.name)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold truncate">{user.name}</p>
+                <Badge variant="outline" className={getTypeColor(user.type)}>
+                  {user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              <div className="flex items-center gap-3 mt-2">
+                {user.type === 'client' && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      <span className="text-sm font-medium">{user.reputation}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">{user.points.toLocaleString()} pts</span>
+                  </>
+                )}
+                {getStatusBadge(user.status, user.deleted_at)}
+              </div>
+            </div>
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
 
-        {/* Filtros */}
-        <Card className="border-0 shadow-soft">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou email..."
-                  className="pl-10"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+  return (
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <PageHeader
+        title="Gerenciar Usuários"
+        subtitle="Gerencie todos os usuários da plataforma"
+        actions={[
+          { label: "Exportar", icon: <Download className="w-4 h-4 sm:mr-2" />, onClick: handleExport, variant: "outline" },
+          { label: "Novo Usuário", icon: <Plus className="w-4 h-4 sm:mr-2" />, onClick: () => navigate('/admin/users/new') }
+        ]}
+      />
+
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4 sm:p-6">
+          <TableFilters
+            searchPlaceholder="Buscar por nome ou email..."
+            searchValue={search}
+            onSearchChange={setSearch}
+            filters={[
+              {
+                key: "type",
+                placeholder: "Tipo de usuário",
+                value: filterType,
+                onChange: setFilterType,
+                options: typeOptions
+              },
+              {
+                key: "status",
+                placeholder: "Status",
+                value: filterStatus,
+                onChange: setFilterStatus,
+                options: statusOptions
+              }
+            ]}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            Usuários ({paginationMeta?.total || users.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveTable
+            columns={columns}
+            data={users}
+            loading={loading}
+            emptyMessage="Nenhum usuário encontrado"
+            renderMobileCard={renderMobileCard}
+          />
+        </CardContent>
+      </Card>
+
+      <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-lg sm:right-0 sm:top-0 sm:bottom-auto rounded-t-2xl sm:rounded-none">
+          <SheetHeader>
+            <SheetTitle>Detalhes do Usuário</SheetTitle>
+          </SheetHeader>
+          {selectedUser && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className={getTypeColor(selectedUser.type)}>{getInitials(selectedUser.name)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-bold">{selectedUser.name}</h3>
+                  <Badge variant="outline" className={getTypeColor(selectedUser.type)}>
+                    {selectedUser.type === 'client' ? 'Cliente' : selectedUser.type === 'company' ? 'Empresa' : 'Administrador'}
+                  </Badge>
+                </div>
               </div>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Tipo de usuário" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="client">Cliente</SelectItem>
-                  <SelectItem value="company">Empresa</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="active">Ativo</SelectItem>
-                  <SelectItem value="inactive">Inativo</SelectItem>
-                  <SelectItem value="suspended">Suspenso</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabela de Usuários */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Usuários ({users.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      className="p-0 hover:bg-transparent font-medium"
-                      onClick={() => handleSort('name')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Usuário
-                        {getSortIcon('name')}
-                      </div>
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      className="p-0 hover:bg-transparent font-medium"
-                      onClick={() => handleSort('points')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Pontos
-                        {getSortIcon('points')}
-                      </div>
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      className="p-0 hover:bg-transparent font-medium"
-                      onClick={() => handleSort('reputation')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Reputação
-                        {getSortIcon('reputation')}
-                      </div>
-                    </Button>
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      className="p-0 hover:bg-transparent font-medium"
-                      onClick={() => handleSort('created_at')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Cadastro
-                        {getSortIcon('created_at')}
-                      </div>
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span>{selectedUser.email}</span>
+                </div>
+                {selectedUser.cpf && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <UserCircle className="w-4 h-4 text-muted-foreground" />
+                    <span>CPF: {selectedUser.cpf}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 text-sm">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span>Cadastro: {new Date(selectedUser.created_at).toLocaleDateString('pt-BR')}</span>
+                </div>
+              </div>
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedUser.type === 'client' && (
+                    <>
                       <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">Pontos</p>
+                        <p className="text-2xl font-bold">{selectedUser.points.toLocaleString()}</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{getTypeLabel(user.type)}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.type === 'client' ? user.points.toLocaleString() : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-secondary text-secondary" />
-                        <span>{user.reputation}</span>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Reputação</p>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-5 h-5 fill-secondary text-secondary" />
+                          <span className="text-2xl font-bold">{selectedUser.reputation}</span>
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(user.status)}</TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" disabled={user.deleted_at === null ? false : true} onClick={() => navigate(`/admin/users/edit/${user.id}`)}>
-                          <Edit3 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" title={user.deleted_at === null ? "Excluir usuário" : "Restaurar usuário"}
-                          size="icon"
-                          onClick={() => handleDelete(user)}>
-                          {user.deleted_at === null ? (
-                            <Trash2 className="w-4 h-4" />
-                          ) : (
-                            <ArchiveRestore className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="border-t pt-4 flex gap-2">
+                <Button className="flex-1" onClick={() => navigate(`/admin/users/edit/${selectedUser.id}`)} disabled={!!selectedUser.deleted_at}>
+                  <Edit3 className="w-4 h-4 mr-2" /> Editar
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => handleDelete(selectedUser)}>
+                  {selectedUser.deleted_at ? <ArchiveRestore className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                  {selectedUser.deleted_at ? "Restaurar" : "Excluir"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }

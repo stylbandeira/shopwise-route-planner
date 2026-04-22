@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Package, Search, Edit3, Trash2, Plus, ArrowLeft,
-  Upload, Download, CheckCircle, XCircle, Image as ImageIcon,
-  CheckCheck, X
+  Package, Search, Edit3, Trash2, Plus,
+  Download, CheckCircle, XCircle, Image as ImageIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
-import { CSVUploader } from "@/components/oiai_ui/CSVUploader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { TableFilters } from "@/components/admin/TableFilters";
+import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
+import { StatsCards } from "@/components/admin/StatsCards";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface Product {
   id: number;
@@ -44,8 +45,6 @@ interface Product {
 
 interface Category {
   id: number;
-  created_at: Date;
-  updated_at: Date;
   name: string;
   description: string;
 }
@@ -65,6 +64,12 @@ interface ProductCounts {
   validados: number;
 }
 
+const defaultCounts: ProductCounts = {
+  total: 0,
+  pendentes: 0,
+  validados: 0
+};
+
 export default function ManageProducts() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -75,21 +80,11 @@ export default function ManageProducts() {
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-
-  const [counts, setCounts] = useState<ProductCounts>({
-    total: 0,
-    pendentes: 0,
-    validados: 0
-  });
-
-  // Estado para abas
+  const [counts, setCounts] = useState<ProductCounts>(defaultCounts);
   const [activeTab, setActiveTab] = useState<string>("todos");
-
-  // Estado para seleção em massa
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-
-  // Estado para diálogo de confirmação
+  const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [validationAction, setValidationAction] = useState<"validate" | "invalidate">("validate");
 
@@ -99,9 +94,7 @@ export default function ManageProducts() {
   }, []);
 
   useEffect(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+    if (searchTimeout) clearTimeout(searchTimeout);
 
     const timeout = setTimeout(() => {
       fetchProducts(1, search, filterCategory, filterStatus);
@@ -110,13 +103,10 @@ export default function ManageProducts() {
     setSearchTimeout(timeout);
 
     return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
+      if (searchTimeout) clearTimeout(searchTimeout);
     };
   }, [search, filterCategory, filterStatus, activeTab]);
 
-  // Efeito para resetar seleção quando mudar de aba
   useEffect(() => {
     setSelectedProducts([]);
     setSelectAll(false);
@@ -126,8 +116,7 @@ export default function ManageProducts() {
     page: number = 1,
     searchTerm: string = search,
     category: string = filterCategory,
-    status: string = filterStatus,
-    statusTab: string = activeTab
+    status: string = filterStatus
   ) => {
     try {
       setLoading(true);
@@ -135,20 +124,25 @@ export default function ManageProducts() {
 
       if (searchTerm) params.search = searchTerm;
       if (category !== "all") params.category = category;
-      if (status !== "all") params.validated = status;
 
-      if (statusTab === "pendentes") {
+      if (activeTab === "pendentes") {
         params.validated = false;
-      } else if (statusTab === "validados") {
+      } else if (activeTab === "validados") {
         params.validated = true;
+      } else if (status !== "all") {
+        params.validated = status === "validados";
       }
 
       const response = await api.get("/admin/products", { params });
-      setProducts(response.data.data);
-      setPaginationMeta(response.data.meta);
-      setCounts(response.data.counts);
+
+      setProducts(response.data.data || []);
+      setPaginationMeta(response.data.meta || null);
+      setCounts(response.data.counts || defaultCounts);
+
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
+      setProducts([]);
+      setCounts(defaultCounts);
     } finally {
       setLoading(false);
     }
@@ -157,19 +151,10 @@ export default function ManageProducts() {
   const fetchCategories = async () => {
     try {
       const response = await api.get("/categories");
-      setCategories(response.data.categories);
+      setCategories(response.data.categories || []);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
     }
-  };
-
-  const handlePageChange = (page: number, searchTerm: string, status: string, category: string) => {
-    fetchProducts(page, searchTerm, category, status, activeTab);
-    window.scrollTo(0, 0);
-  };
-
-  const handlePaginationChange = (page: number, searchTerm: string, status: string) => {
-    handlePageChange(page, searchTerm, status, filterCategory);
   };
 
   const handleDelete = async (productId: number) => {
@@ -182,17 +167,6 @@ export default function ManageProducts() {
       console.error('Erro ao deletar produto:', error);
       alert('Erro ao excluir produto');
     }
-  };
-
-  const handleBulkUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await api.post("admin/products/import", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
-
-    return response.data;
   };
 
   const handleExport = async () => {
@@ -213,7 +187,6 @@ export default function ManageProducts() {
     }
   };
 
-  // Funções para seleção em massa
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedProducts([]);
@@ -228,15 +201,11 @@ export default function ManageProducts() {
       const newSelected = prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId];
-
-      // Verifica se todos estão selecionados
       setSelectAll(newSelected.length === products.length);
-
       return newSelected;
     });
   };
 
-  // Função para validar/invalidar produtos selecionados
   const handleBulkValidation = async (validate: boolean) => {
     if (selectedProducts.length === 0) return;
 
@@ -246,16 +215,10 @@ export default function ManageProducts() {
         validated: validate
       });
 
-      // Recarrega os produtos
       fetchProducts();
-
-      // Limpa seleção
       setSelectedProducts([]);
       setSelectAll(false);
-
-      // Fecha o diálogo
       setShowValidationDialog(false);
-
     } catch (error) {
       console.error('Erro ao validar produtos:', error);
       alert('Erro ao processar validação');
@@ -269,328 +232,341 @@ export default function ManageProducts() {
     }).format(price);
   };
 
-  // Função para obter URL da imagem
   const getImageUrl = (img: string | undefined) => {
     if (!img) return null;
     if (img.startsWith('http')) return img;
     return `${import.meta.env.VITE_API_URL}/storage/${img}`;
   };
 
-  return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Gerenciar Produtos</h1>
-              <p className="text-muted-foreground">
-                Gerencie todos os produtos cadastrados na plataforma
-              </p>
-            </div>
-          </div>
+  const stats = [
+    { label: "Total", value: counts.total, icon: <Package className="w-3 h-3 sm:w-4 sm:h-4 text-white" />, color: "bg-primary" },
+    { label: "Pendentes", value: counts.pendentes, icon: <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />, color: "bg-yellow-500" },
+    { label: "Validados", value: counts.validados, icon: <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />, color: "bg-green-500" }
+  ];
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={handleExport}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
+  const categoryOptions = categories.map(cat => ({ value: cat.name, label: cat.name }));
+  const statusOptions = [
+    { value: "validados", label: "Validados" },
+    { value: "pendentes", label: "Pendentes" }
+  ];
 
-            <CSVUploader
-              onFileSubmit={handleBulkUpload}
-              buttonText="Importar em Massa"
-              accept=".csv"
-            />
-
-            <Button
-              onClick={() => navigate('/admin/products/new')}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Produto
-            </Button>
-          </div>
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Tabs */}
-        <Tabs defaultValue="todos" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+  return (
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <PageHeader
+        title="Gerenciar Produtos"
+        subtitle="Gerencie todos os produtos cadastrados na plataforma"
+        actions={[
+          { label: "Exportar", icon: <Download className="w-4 h-4 sm:mr-2" />, onClick: handleExport, variant: "outline" },
+          { label: "Novo Produto", icon: <Plus className="w-4 h-4 sm:mr-2" />, onClick: () => navigate('/admin/products/new') }
+        ]}
+      />
 
-          {/* Filtros */}
-          <Card className="border-0 shadow-soft">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, código de barras ou marca..."
-                    className="pl-10"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
+      <StatsCards stats={stats} />
+
+      <Tabs defaultValue="todos" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="todos">Todos</TabsTrigger>
+          <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
+          <TabsTrigger value="validados">Validados</TabsTrigger>
+        </TabsList>
+
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4 sm:p-6">
+            <TableFilters
+              searchPlaceholder="Buscar por nome, código ou marca..."
+              searchValue={search}
+              onSearchChange={setSearch}
+              filters={[
+                {
+                  key: "category",
+                  placeholder: "Categoria",
+                  value: filterCategory,
+                  onChange: setFilterCategory,
+                  options: categoryOptions
+                },
+                ...(activeTab === "todos" ? [{
+                  key: "status",
+                  placeholder: "Status",
+                  value: filterStatus,
+                  onChange: setFilterStatus,
+                  options: statusOptions
+                }] : [])
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        <BulkActionsBar
+          selectedCount={selectedProducts.length}
+          actions={[
+            {
+              label: "Validar",
+              icon: <CheckCircle className="w-4 h-4" />,
+              onClick: () => { setValidationAction("validate"); setShowValidationDialog(true); },
+              variant: "outline",
+              className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+            },
+            {
+              label: "Invalidar",
+              icon: <XCircle className="w-4 h-4" />,
+              onClick: () => { setValidationAction("invalidate"); setShowValidationDialog(true); },
+              variant: "outline",
+              className: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+            }
+          ]}
+          onClear={() => { setSelectedProducts([]); setSelectAll(false); }}
+        />
+
+        {/* Tabela Desktop */}
+        <Card className="border-0 shadow-sm hidden md:block">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+              Produtos ({paginationMeta?.total || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="w-12 py-3 text-left">
+                      <Checkbox
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </th>
+                    <th className="w-20 py-3 text-left">Imagem</th>
+                    <th className="py-3 text-left">Produto</th>
+                    <th className="w-32 py-3 text-left">Código</th>
+                    <th className="w-32 py-3 text-left">Categoria</th>
+                    <th className="w-24 py-3 text-left">Preço</th>
+                    <th className="w-24 py-3 text-left">Status</th>
+                    <th className="w-32 py-3 text-left">Atualização</th>
+                    <th className="w-24 py-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3">
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={() => handleSelectProduct(product.id)}
+                        />
+                      </td>
+                      <td className="py-3">
+                        <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 border">
+                          {product.img ? (
+                            <img
+                              src={getImageUrl(product.img) || ''}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <div className="max-w-[250px]">
+                          <p className="font-medium truncate">{product.name}</p>
+                          {product.brand && <p className="text-sm text-muted-foreground truncate">{product.brand}</p>}
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <code className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap">{product.sku || 'N/A'}</code>
+                      </td>
+                      <td className="py-3">
+                        <span className="text-sm whitespace-nowrap">{product.category}</span>
+                      </td>
+                      <td className="py-3">
+                        <span className="font-medium whitespace-nowrap">{formatPrice(product.average_price)}</span>
+                      </td>
+                      <td className="py-3">
+                        {product.validated ? (
+                          <Badge className="bg-green-100 text-green-700 whitespace-nowrap">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Validado
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="whitespace-nowrap">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-3">
+                        <span className="text-sm whitespace-nowrap">
+                          {new Date(product.updated_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                            className="h-8 w-8"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(product.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {products.length === 0 && !loading && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum produto encontrado</p>
+              </div>
+            )}
+
+            {paginationMeta && paginationMeta.last_page > 1 && (
+              <div className="mt-4">
+                <CustomPagination
+                  paginationMeta={paginationMeta}
+                  search={search}
+                  filterStatus={filterStatus}
+                  onPageChange={(page: number) => fetchProducts(page)}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Cards Mobile */}
+        <div className="md:hidden space-y-3">
+          {products.map((product) => (
+            <Card key={product.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Imagem */}
+                  <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 border flex-shrink-0">
+                    {product.img ? (
+                      <img
+                        src={getImageUrl(product.img) || ''}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Informações */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{product.name}</p>
+                        {product.brand && <p className="text-sm text-muted-foreground truncate">{product.brand}</p>}
+                        <p className="text-xs text-muted-foreground mt-1 truncate">SKU: {product.sku || 'N/A'}</p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {product.validated ? (
+                          <Badge className="bg-green-100 text-green-700 text-xs whitespace-nowrap">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Validado
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-xs whitespace-nowrap">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">Categoria</p>
+                        <p className="text-sm truncate">{product.category}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <p className="text-xs text-muted-foreground">Preço Médio</p>
+                        <p className="text-lg font-bold text-primary">{formatPrice(product.average_price)}</p>
+                      </div>
+                    </div>
+
+                    {/* Botões de ação no card mobile */}
+                    <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                      >
+                        <Edit3 className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(product.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
 
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {activeTab === "todos" && (
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="validados">Validados</SelectItem>
-                      <SelectItem value="pendentes">Pendentes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ações em massa */}
-          {selectedProducts.length > 0 && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCheck className="w-5 h-5 text-primary" />
-                <span className="font-medium">
-                  {selectedProducts.length} produto{selectedProducts.length > 1 ? 's' : ''} selecionado{selectedProducts.length > 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setValidationAction("validate");
-                    setShowValidationDialog(true);
-                  }}
-                  className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Validar Selecionados
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setValidationAction("invalidate");
-                    setShowValidationDialog(true);
-                  }}
-                  className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Invalidar Selecionados
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedProducts([]);
-                    setSelectAll(false);
-                  }}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Limpar
-                </Button>
-              </div>
+          {products.length === 0 && !loading && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhum produto encontrado</p>
             </div>
           )}
 
-          {/* Tabela de Produtos */}
-          <Card className="border-0 shadow-soft">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Produtos {paginationMeta ? `(${paginationMeta.total})` : ''}
-              </CardTitle>
-            </CardHeader>
+          {paginationMeta && paginationMeta.last_page > 1 && (
+            <div className="mt-4">
+              <CustomPagination
+                paginationMeta={paginationMeta}
+                search={search}
+                filterStatus={filterStatus}
+                onPageChange={(page: number) => fetchProducts(page)}
+              />
+            </div>
+          )}
+        </div>
+      </Tabs>
 
-            <CardContent>
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
-                      <div className="w-10 h-10 bg-gray-200 rounded"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={selectAll}
-                              onCheckedChange={handleSelectAll}
-                              aria-label="Selecionar todos"
-                            />
-                          </TableHead>
-                          <TableHead className="w-20">Imagem</TableHead>
-                          <TableHead>Produto</TableHead>
-                          <TableHead>Código de Barras</TableHead>
-                          <TableHead>Categoria</TableHead>
-                          <TableHead>Preço Médio</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Última Atualização</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-
-                      <TableBody>
-                        {products.map((product) => (
-                          <TableRow key={product.id} className={selectedProducts.includes(product.id) ? "bg-primary/5" : ""}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedProducts.includes(product.id)}
-                                onCheckedChange={() => handleSelectProduct(product.id)}
-                                aria-label={`Selecionar ${product.name}`}
-                              />
-                            </TableCell>
-
-                            <TableCell>
-                              <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 border">
-                                {product.img ? (
-                                  <img
-                                    src={getImageUrl(product.img) || ''}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <ImageIcon className="w-6 h-6 text-gray-400" />
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{product.name}</p>
-                                {product.brand && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {product.brand}
-                                  </p>
-                                )}
-                                {product.description && (
-                                  <p className="text-xs text-muted-foreground truncate max-w-xs">
-                                    {product.description}
-                                  </p>
-                                )}
-                              </div>
-                            </TableCell>
-
-                            <TableCell>
-                              <code className="text-xs bg-muted px-2 py-1 rounded">
-                                {product.sku || 'N/A'}
-                              </code>
-                            </TableCell>
-
-                            <TableCell>
-                              <span className="text-sm">{product.category}</span>
-                            </TableCell>
-
-                            <TableCell>
-                              <span className="font-medium">
-                                {formatPrice(product.average_price)}
-                              </span>
-                            </TableCell>
-
-                            <TableCell>
-                              {product.validated ? (
-                                <Badge variant="success" className="bg-green-100 text-green-700">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Validado
-                                </Badge>
-                              ) : (
-                                <Badge variant="destructive">
-                                  <XCircle className="w-3 h-3 mr-1" />
-                                  Pendente
-                                </Badge>
-                              )}
-                            </TableCell>
-
-                            <TableCell>
-                              {new Date(product.updated_at).toLocaleDateString('pt-BR')}
-                            </TableCell>
-
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => navigate(`/admin/products/edit/${product.id}`)}
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(product.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {products.length === 0 && !loading && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Nenhum produto encontrado</p>
-                    </div>
-                  )}
-
-                  {paginationMeta && paginationMeta.last_page > 1 && (
-                    <CustomPagination
-                      paginationMeta={paginationMeta}
-                      search={search}
-                      filterStatus={filterStatus}
-                      onPageChange={handlePaginationChange}
-                    />
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </Tabs>
-      </div>
-
-      {/* Dialog de confirmação para validação em massa */}
+      {/* Dialog de confirmação */}
       <AlertDialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -617,6 +593,86 @@ export default function ManageProducts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+
+      {/* Product Details Sheet */}
+      <Sheet open={!!selectedProductDetail} onOpenChange={() => setSelectedProductDetail(null)}>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-lg sm:right-0 sm:top-0 sm:bottom-auto rounded-t-2xl sm:rounded-none">
+          <SheetHeader>
+            <SheetTitle>Detalhes do Produto</SheetTitle>
+          </SheetHeader>
+          {selectedProductDetail && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-md overflow-hidden bg-gray-100 border flex-shrink-0">
+                  {selectedProductDetail.img ? (
+                    <img
+                      src={getImageUrl(selectedProductDetail.img) || ''}
+                      alt={selectedProductDetail.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold truncate">{selectedProductDetail.name}</h3>
+                  {selectedProductDetail.brand && (
+                    <p className="text-sm text-muted-foreground truncate">{selectedProductDetail.brand}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Código de Barras</p>
+                    <p className="font-mono text-sm break-all">{selectedProductDetail.sku || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Categoria</p>
+                    <p className="text-sm">{selectedProductDetail.category}</p>
+                  </div>
+                </div>
+
+                {selectedProductDetail.description && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Descrição</p>
+                    <p className="text-sm break-words">{selectedProductDetail.description}</p>
+                  </div>
+                )}
+
+                <div className="border-t pt-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Preço Médio</p>
+                      <p className="text-2xl font-bold text-primary">{formatPrice(selectedProductDetail.average_price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      {selectedProductDetail.validated ? (
+                        <Badge className="bg-green-100 text-green-700">Validado</Badge>
+                      ) : (
+                        <Badge variant="destructive">Pendente</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 flex gap-2">
+                <Button className="flex-1" onClick={() => navigate(`/admin/products/edit/${selectedProductDetail.id}`)}>
+                  <Edit3 className="w-4 h-4 mr-2" /> Editar
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => handleDelete(selectedProductDetail.id)}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }

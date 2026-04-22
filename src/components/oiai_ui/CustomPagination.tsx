@@ -61,13 +61,13 @@ export function CustomPagination({
     };
 
     return (
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
             <div className="text-sm text-muted-foreground">
                 Mostrando {from} a {to} de {total} resultados
             </div>
 
             <Pagination>
-                <PaginationContent>
+                <PaginationContent className="flex-wrap justify-center gap-1">
                     {/* Anterior */}
                     <PaginationItem>
                         <PaginationPrevious

@@ -3,9 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, MapPin, DollarSign, Edit, Trash2, Share2, Package, Store } from "lucide-react";
+import { ArrowLeft, MapPin, DollarSign, Edit, Trash2, Share2, Package, Store, MoreVertical, TrendingUp } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface Product {
   id: number;
@@ -63,6 +70,7 @@ export default function ViewShoppingList() {
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isOptimizeSheetOpen, setIsOptimizeSheetOpen] = useState(false);
 
   // ARMAZENA AS QUANTIDADES ORIGINAIS (vindas de list.products)
   const [originalQuantities, setOriginalQuantities] = useState<Map<number, number>>(new Map());
@@ -250,6 +258,8 @@ export default function ViewShoppingList() {
     if (isOptimizing) return;
 
     setIsOptimizing(true);
+    setIsOptimizeSheetOpen(false);
+
     try {
       await api.post(`/lists/${id}/optimize`, { optimized: true });
 
@@ -318,50 +328,67 @@ export default function ViewShoppingList() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
+      <div className="container mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Header - Versão mais sutil e elegante */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="h-8 w-8 sm:h-9 sm:w-9 p-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{shoppingList.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                Criada em {new Date(shoppingList.created_at).toLocaleDateString('pt-BR')}
+              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">
+                {shoppingList.name}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {new Date(shoppingList.created_at).toLocaleDateString('pt-BR')}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Share2 className="w-4 h-4 mr-2" />
-              Compartilhar
-            </Button>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+
+          {/* Menu de ações - Mais compacto em mobile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate(`/list/${shoppingList.id}/edit`)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Editar Lista
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Share2 className="w-4 h-4 mr-2" />
+                Compartilhar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-emerald-600" />
+        {/* Stats Cards - Em linha no mobile */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          {/* Card Valor Total */}
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col items-start gap-1 sm:gap-2">
+                <div className="w-6 h-6 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-3 h-3 sm:w-5 sm:h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">R$ {optimizedTotal.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground">Valor Total</p>
+                  <p className="text-sm sm:text-2xl font-bold">R$ {optimizedTotal.toFixed(2)}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">Valor Total</p>
                   {shoppingList.optimized && unoptimizedTotal > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1 line-through">
-                      Sem otimizar: R$ {unoptimizedTotal.toFixed(2)}
+                    <p className="text-[8px] sm:text-xs text-muted-foreground line-through hidden sm:block">
+                      R$ {unoptimizedTotal.toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -369,40 +396,90 @@ export default function ViewShoppingList() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Package className="w-6 h-6 text-blue-600" />
+          {/* Card Itens Comprados */}
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col items-start gap-1 sm:gap-2">
+                <div className="w-6 h-6 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Package className="w-3 h-3 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{completedItems.size}/{totalItems}</p>
-                  <p className="text-sm text-muted-foreground">Itens Comprados</p>
+                  <p className="text-sm sm:text-2xl font-bold">{completedItems.size}/{totalItems}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">Itens</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <span className="text-lg font-bold text-purple-600">{Math.round(totalProgress)}%</span>
+          {/* Card Progresso */}
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col items-start gap-1 sm:gap-2">
+                <div className="w-6 h-6 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xs sm:text-lg font-bold text-purple-600">{Math.round(totalProgress)}%</span>
                 </div>
-                <div>
-                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-full">
+                  <div className="w-full h-1 sm:h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-purple-500 transition-all duration-300"
                       style={{ width: `${totalProgress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">Progresso</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mt-1">Progresso</p>
                 </div>
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card className="border-0 shadow-lg bg-white">
+        {/* Botão Otimizar Rota - Versão Mobile (Sheet) */}
+        <div className="lg:hidden">
+          <Sheet open={isOptimizeSheetOpen} onOpenChange={setIsOptimizeSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-md"
+                disabled={shoppingList.optimized}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                {shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota"}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+              <SheetHeader>
+                <SheetTitle className="text-left">Otimizar Rota</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Ao otimizar sua rota, os produtos serão reorganizados para oferecer o menor custo total,
+                    considerando preços e localização das empresas.
+                  </p>
+                </div>
+                <Button
+                  onClick={optimizeRoute}
+                  className="w-full"
+                  disabled={isOptimizing}
+                >
+                  {isOptimizing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Otimizando...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Confirmar Otimização
+                    </>
+                  )}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Botão Otimizar Rota - Versão Desktop */}
+        <div className="hidden lg:block">
+          <Card className="border-0 shadow-sm bg-white">
             <CardContent className="p-6">
               <Button
                 onClick={optimizeRoute}
@@ -416,11 +493,10 @@ export default function ViewShoppingList() {
           </Card>
         </div>
 
-        {/* Products List */}
+        {/* Products List - Mantido igual */}
         <div className="space-y-6">
           {hasCompaniesData ? (
             Object.values(shoppingList.companies as Record<string, CompanyGroup>).map((group) => {
-              // CALCULA O SUBTOTAL DA EMPRESA COM AS QUANTIDADES ORIGINAIS
               const companyTotal = calculateTotalWithOriginalQuantities(group.products);
               const companyCompleted = calculateCompletedCount(group.products);
 
@@ -450,7 +526,6 @@ export default function ViewShoppingList() {
                       const product = item.product;
                       const unity = getProductUnity(product);
                       const category = getProductCategory(product);
-                      // USA A QUANTIDADE ORIGINAL
                       const quantity = originalQuantities.get(product.id) || getProductQuantity(product);
 
                       return (
@@ -589,7 +664,7 @@ export default function ViewShoppingList() {
           )}
         </div>
 
-        {/* Actions */}
+        {/* Actions - Mantido igual */}
         <div className="flex justify-center gap-4 pt-6">
           <Button
             variant="outline"
