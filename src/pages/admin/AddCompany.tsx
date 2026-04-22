@@ -1,6 +1,5 @@
 // pages/admin/AddCompany.tsx
 import { useNavigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CompanyForm } from "@/components/forms/CompanyForm";
 import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
@@ -74,16 +73,14 @@ export default function AddCompany() {
     };
 
     return (
-        <DashboardLayout>
-            <div className="container mx-auto px-4 py-6">
-                <CompanyForm
-                    onSubmit={async (data) => {
-                        await handleSubmit(data);
-                        handleSuccess();
-                    }}
-                    onCancel={() => navigate("/admin/companies")}
-                />
-            </div>
-        </DashboardLayout>
+        <div className="container mx-auto px-4 py-6">
+            <CompanyForm
+                onSubmit={async (data) => {
+                    await handleSubmit(data);
+                    handleSuccess();
+                }}
+                onCancel={() => navigate("/admin/companies")}
+            />
+        </div>
     );
 }

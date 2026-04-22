@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Building2, Search, Edit3, Trash2, Plus, ArrowLeft, Globe, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
 interface Company {
@@ -121,7 +120,7 @@ export default function ManageCompanies() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="container mx-auto px-4 py-6 space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -255,6 +254,6 @@ export default function ManageCompanies() {
                     </CardContent>
                 </Card>
             </div>
-        </DashboardLayout >
+        </ >
     );
 }

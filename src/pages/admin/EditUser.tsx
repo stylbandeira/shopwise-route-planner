@@ -1,5 +1,4 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -69,14 +68,14 @@ export default function EditUser() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="container mx-auto px-4 py-6">Carregando...</div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="container mx-auto px-4 py-6">
                 <UserForm
                     initialData={editedUser}
@@ -86,6 +85,6 @@ export default function EditUser() {
                     isLoading={isSubmitting}
                 />
             </div>
-        </DashboardLayout>
+        </>
     );
 }

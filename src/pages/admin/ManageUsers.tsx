@@ -10,7 +10,6 @@ import api from "@/lib/api";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
-import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface User {
@@ -127,73 +126,114 @@ export default function ManageUsers() {
     return name.split(' ').map(word => word[0]).slice(0, 2).join('').toUpperCase();
   };
 
+  // Definição das colunas com renderização correta
   const columns = [
-    { key: "name", header: "Usuário", className: "min-w-[200px]" },
-    { key: "type", header: "Tipo", className: "w-24" },
-    { key: "points", header: "Pontos", className: "w-20" },
-    { key: "reputation", header: "Reputação", className: "w-24" },
-    { key: "status", header: "Status", className: "w-24" },
-    { key: "created_at", header: "Cadastro", className: "w-32" },
-    { key: "actions", header: "Ações", className: "w-24 text-right" }
+    {
+      key: "name",
+      header: "Usuário",
+      className: "min-w-[200px]",
+      render: (user: User) => (
+        <div>
+          <p className="font-medium">{user.name}</p>
+          <p className="text-xs text-muted-foreground">{user.email}</p>
+        </div>
+      )
+    },
+    {
+      key: "type",
+      header: "Tipo",
+      className: "w-24",
+      render: (user: User) => (
+        <Badge variant="outline" className={getTypeColor(user.type)}>
+          {user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}
+        </Badge>
+      )
+    },
+    {
+      key: "points",
+      header: "Pontos",
+      className: "w-20",
+      render: (user: User) => user.type === 'client' ? user.points.toLocaleString() : '-'
+    },
+    {
+      key: "reputation",
+      header: "Reputação",
+      className: "w-24",
+      render: (user: User) => (
+        <div className="flex items-center gap-1">
+          <Star className="w-3 h-3 fill-secondary text-secondary" />
+          <span>{user.reputation}</span>
+        </div>
+      )
+    },
+    {
+      key: "status",
+      header: "Status",
+      className: "w-24",
+      render: (user: User) => getStatusBadge(user.status, user.deleted_at)
+    },
+    {
+      key: "created_at",
+      header: "Cadastro",
+      className: "w-32",
+      render: (user: User) => new Date(user.created_at).toLocaleDateString('pt-BR')
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      className: "w-24 text-right",
+      render: (user: User) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={!!user.deleted_at}
+            onClick={() => navigate(`/admin/users/edit/${user.id}`)}
+            className="h-8 w-8"
+          >
+            <Edit3 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(user)}
+            className="h-8 w-8 text-destructive hover:text-destructive"
+          >
+            {user.deleted_at ? <ArchiveRestore className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+          </Button>
+        </div>
+      )
+    }
   ];
-
-  const renderDesktopRow = (user: User) => ({
-    name: (
-      <div>
-        <p className="font-medium">{user.name}</p>
-        <p className="text-xs text-muted-foreground">{user.email}</p>
-      </div>
-    ),
-    type: <Badge variant="outline" className={getTypeColor(user.type)}>{user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}</Badge>,
-    points: user.type === 'client' ? user.points.toLocaleString() : '-',
-    reputation: (
-      <div className="flex items-center gap-1">
-        <Star className="w-3 h-3 fill-secondary text-secondary" />
-        <span>{user.reputation}</span>
-      </div>
-    ),
-    status: getStatusBadge(user.status, user.deleted_at),
-    created_at: new Date(user.created_at).toLocaleDateString('pt-BR'),
-    actions: (
-      <div className="flex items-center justify-end gap-1">
-        <Button variant="ghost" size="icon" disabled={!!user.deleted_at} onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="h-8 w-8">
-          <Edit3 className="w-4 h-4" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleDelete(user)} className="h-8 w-8 text-destructive hover:text-destructive">
-          {user.deleted_at ? <ArchiveRestore className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
-        </Button>
-      </div>
-    )
-  });
 
   const renderMobileCard = (user: User) => (
     <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedUser(user)}>
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className={getTypeColor(user.type)}>{getInitials(user.name)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-semibold truncate">{user.name}</p>
-                <Badge variant="outline" className={getTypeColor(user.type)}>
-                  {user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-              <div className="flex items-center gap-3 mt-2">
-                {user.type === 'client' && (
-                  <>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-secondary text-secondary" />
-                      <span className="text-sm font-medium">{user.reputation}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{user.points.toLocaleString()} pts</span>
-                  </>
-                )}
-                {getStatusBadge(user.status, user.deleted_at)}
-              </div>
+        <div className="flex items-start gap-3">
+          <Avatar className="h-12 w-12 flex-shrink-0">
+            <AvatarFallback className={getTypeColor(user.type)}>
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-semibold truncate">{user.name}</p>
+              <Badge variant="outline" className={getTypeColor(user.type)}>
+                {user.type === 'client' ? 'Cliente' : user.type === 'company' ? 'Empresa' : 'Admin'}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {user.type === 'client' && (
+                <>
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-secondary text-secondary" />
+                    <span className="text-sm font-medium">{user.reputation}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{user.points.toLocaleString()} pts</span>
+                </>
+              )}
+              {getStatusBadge(user.status, user.deleted_at)}
             </div>
           </div>
         </div>
@@ -252,6 +292,7 @@ export default function ManageUsers() {
             loading={loading}
             emptyMessage="Nenhum usuário encontrado"
             renderMobileCard={renderMobileCard}
+            onRowClick={(user) => setSelectedUser(user)}
           />
         </CardContent>
       </Card>
@@ -264,32 +305,36 @@ export default function ManageUsers() {
           {selectedUser && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className={getTypeColor(selectedUser.type)}>{getInitials(selectedUser.name)}</AvatarFallback>
+                <Avatar className="h-16 w-16 flex-shrink-0">
+                  <AvatarFallback className={getTypeColor(selectedUser.type)}>
+                    {getInitials(selectedUser.name)}
+                  </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="text-xl font-bold">{selectedUser.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold truncate">{selectedUser.name}</h3>
                   <Badge variant="outline" className={getTypeColor(selectedUser.type)}>
                     {selectedUser.type === 'client' ? 'Cliente' : selectedUser.type === 'company' ? 'Empresa' : 'Administrador'}
                   </Badge>
                 </div>
               </div>
+
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedUser.email}</span>
+                  <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="break-all">{selectedUser.email}</span>
                 </div>
                 {selectedUser.cpf && (
                   <div className="flex items-center gap-3 text-sm">
-                    <UserCircle className="w-4 h-4 text-muted-foreground" />
-                    <span>CPF: {selectedUser.cpf}</span>
+                    <UserCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span>{selectedUser.cpf}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>Cadastro: {new Date(selectedUser.created_at).toLocaleDateString('pt-BR')}</span>
+                  <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span>{new Date(selectedUser.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
+
               <div className="border-t pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   {selectedUser.type === 'client' && (
@@ -307,15 +352,35 @@ export default function ManageUsers() {
                       </div>
                     </>
                   )}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <div>{getStatusBadge(selectedUser.status, selectedUser.deleted_at)}</div>
+                  </div>
                 </div>
               </div>
-              <div className="border-t pt-4 flex gap-2">
-                <Button className="flex-1" onClick={() => navigate(`/admin/users/edit/${selectedUser.id}`)} disabled={!!selectedUser.deleted_at}>
-                  <Edit3 className="w-4 h-4 mr-2" /> Editar
+
+              <div className="border-t pt-4 flex flex-col sm:flex-row gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => navigate(`/admin/users/edit/${selectedUser.id}`)}
+                  disabled={!!selectedUser.deleted_at}
+                >
+                  <Edit3 className="w-4 h-4 mr-2" />
+                  Editar
                 </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => handleDelete(selectedUser)}>
-                  {selectedUser.deleted_at ? <ArchiveRestore className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                  {selectedUser.deleted_at ? "Restaurar" : "Excluir"}
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => {
+                    handleDelete(selectedUser);
+                    setSelectedUser(null);
+                  }}
+                >
+                  {selectedUser.deleted_at ? (
+                    <><ArchiveRestore className="w-4 h-4 mr-2" /> Restaurar</>
+                  ) : (
+                    <><Trash2 className="w-4 h-4 mr-2" /> Excluir</>
+                  )}
                 </Button>
               </div>
             </div>

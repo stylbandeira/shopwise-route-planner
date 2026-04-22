@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
 import { useState } from "react";
@@ -71,17 +70,15 @@ export default function AddProduct() {
     };
 
     return (
-        <DashboardLayout>
-            <div className="container mx-auto px-4 py-6">
-                <ProductForm
-                    key={formKey}
-                    onSubmit={async (data) => {
-                        await handleSubmit(data);
-                        handleSuccess();
-                    }}
-                    onCancel={() => navigate("/admin/products")}
-                />
-            </div>
-        </DashboardLayout>
+        <div className="container mx-auto px-4 py-6">
+            <ProductForm
+                key={formKey}
+                onSubmit={async (data) => {
+                    await handleSubmit(data);
+                    handleSuccess();
+                }}
+                onCancel={() => navigate("/admin/products")}
+            />
+        </div>
     );
 }

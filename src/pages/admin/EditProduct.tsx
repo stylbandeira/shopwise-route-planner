@@ -1,6 +1,4 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { CompanyForm } from "@/components/forms/CompanyForm";
 import { useUser } from "@/contexts/UserContext";
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -97,23 +95,21 @@ export default function EditProduct() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="container mx-auto px-4 py-6">Carregando...</div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
-            <div className="container mx-auto px-4 py-6">
-                <ProductForm
-                    initialData={product}
-                    onSubmit={handleSubmit}
-                    onCancel={handleCancel}
-                    isEditing={true}
-                    isLoading={isSubmitting}
-                />
-            </div>
-        </DashboardLayout>
+        <div className="container mx-auto px-4 py-6">
+            <ProductForm
+                initialData={product}
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+                isEditing={true}
+                isLoading={isSubmitting}
+            />
+        </div>
     );
 }

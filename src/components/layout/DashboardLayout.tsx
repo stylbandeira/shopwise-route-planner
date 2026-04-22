@@ -1,8 +1,9 @@
 import { useUser } from "@/contexts/UserContext";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { Outlet } from "react-router-dom";
 
 interface DashboardLayoutProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -22,7 +23,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 onLogout={logout}
             />
             <main>
-                {children}
+                {children || <Outlet />}
             </main>
         </div>
     );
