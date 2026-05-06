@@ -10,7 +10,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const { user, logout } = useUser();
 
     if (!user) {
-        return null;
+        return (
+            <div className="min-h-screen bg-background">
+                <main>
+                    {children || <Outlet />}
+                </main>
+            </div>
+        );
     }
 
     return (
