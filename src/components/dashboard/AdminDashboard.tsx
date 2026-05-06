@@ -226,9 +226,9 @@ export function AdminDashboard() {
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${index === 0 ? 'bg-yellow-100 text-yellow-600' :
-                        index === 1 ? 'bg-gray-100 text-gray-600' :
-                          index === 2 ? 'bg-orange-100 text-orange-600' :
-                            'bg-primary/10 text-primary'
+                      index === 1 ? 'bg-gray-100 text-gray-600' :
+                        index === 2 ? 'bg-orange-100 text-orange-600' :
+                          'bg-primary/10 text-primary'
                       }`}>
                       {index === 0 ? <Crown className="w-4 h-4" /> :
                         index === 1 ? <Award className="w-4 h-4" /> :
@@ -310,14 +310,14 @@ export function AdminDashboard() {
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${index === 0 ? 'bg-yellow-100' :
-                        index === 1 ? 'bg-gray-100' :
-                          index === 2 ? 'bg-orange-100' :
-                            'bg-primary/10'
+                      index === 1 ? 'bg-gray-100' :
+                        index === 2 ? 'bg-orange-100' :
+                          'bg-primary/10'
                       }`}>
                       <span className={`text-sm font-bold ${index === 0 ? 'text-yellow-600' :
-                          index === 1 ? 'text-gray-600' :
-                            index === 2 ? 'text-orange-600' :
-                              'text-primary'
+                        index === 1 ? 'text-gray-600' :
+                          index === 2 ? 'text-orange-600' :
+                            'text-primary'
                         }`}>
                         {index + 1}
                       </span>
