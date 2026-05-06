@@ -88,7 +88,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
                     <UserPlus className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
-                <p className="text-muted-foreground">Junte-se ao Smart Shopping</p>
+                <p className="text-muted-foreground">Junte-se ao Óiaí</p>
             </CardHeader>
 
             <CardContent className="space-y-4">
