@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, Building2, Shield, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
+import { CustomLogo } from "../oiai_ui/CustomLogo";
 
 export type UserType = "client" | "company" | "admin";
 
@@ -78,9 +79,9 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     <Card className="w-full max-w-md shadow-medium border-0">
       <CardHeader className="text-center pb-4">
         <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center">
-          <ShoppingCart className="w-8 h-8 text-white" />
+          <CustomLogo className="w-8 h-8 text-white" />
         </div>
-        <CardTitle className="text-2xl font-bold">Smart Shopping</CardTitle>
+        {/* <CardTitle className="text-2xl font-bold">Óiaí</CardTitle> */}
         <p className="text-muted-foreground">Entre na sua conta</p>
       </CardHeader>
 
