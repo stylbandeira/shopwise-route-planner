@@ -26,7 +26,6 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
         const response = api.put(`events/${id}`, {
             checked: true,
         });
-        console.log('Marcar como lida:', id);
     };
 
     const handleMarkAllAsRead = () => {
