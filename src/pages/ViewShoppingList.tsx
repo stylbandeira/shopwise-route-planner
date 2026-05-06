@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useUser } from "@/contexts/UserContext";
 
 interface Product {
   id: number;
@@ -45,6 +46,12 @@ interface CompanyGroup {
     id: number;
     name: string;
     raw_address: string;
+    address: {
+      geocode_status: string;
+      full_address: string;
+      latitude: string;
+      longitude: string;
+    };
   };
   products: CompanyProduct[];
 }
@@ -71,6 +78,7 @@ export default function ViewShoppingList() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isOptimizeSheetOpen, setIsOptimizeSheetOpen] = useState(false);
+  const user = useUser();
 
   // ARMAZENA AS QUANTIDADES ORIGINAIS (vindas de list.products)
   const [originalQuantities, setOriginalQuantities] = useState<Map<number, number>>(new Map());
@@ -432,66 +440,70 @@ export default function ViewShoppingList() {
           </Card>
         </div>
 
-        {/* Botão Otimizar Rota - Versão Mobile (Sheet) */}
-        <div className="lg:hidden">
-          <Sheet open={isOptimizeSheetOpen} onOpenChange={setIsOptimizeSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-md"
-                disabled={shoppingList.optimized}
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                {shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota"}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl">
-              <SheetHeader>
-                <SheetTitle className="text-left">Otimizar Rota</SheetTitle>
-              </SheetHeader>
-              <div className="mt-6 space-y-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    Ao otimizar sua rota, os produtos serão reorganizados para oferecer o menor custo total,
-                    considerando preços e localização das empresas.
-                  </p>
-                </div>
-                <Button
-                  onClick={optimizeRoute}
-                  className="w-full"
-                  disabled={isOptimizing}
-                >
-                  {isOptimizing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Otimizando...
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Confirmar Otimização
-                    </>
-                  )}
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+        {user.user && (
+          <>
+            {/* Botão Otimizar Rota - Versão Mobile (Sheet) */}
+            <div className="lg:hidden">
+              <Sheet open={isOptimizeSheetOpen} onOpenChange={setIsOptimizeSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-md"
+                    disabled={shoppingList.optimized}
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    {shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota"}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="rounded-t-2xl">
+                  <SheetHeader>
+                    <SheetTitle className="text-left">Otimizar Rota</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        Ao otimizar sua rota, os produtos serão reorganizados para oferecer o menor custo total,
+                        considerando preços e localização das empresas.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={optimizeRoute}
+                      className="w-full"
+                      disabled={isOptimizing}
+                    >
+                      {isOptimizing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Otimizando...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Confirmar Otimização
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
 
-        {/* Botão Otimizar Rota - Versão Desktop */}
-        <div className="hidden lg:block">
-          <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-6">
-              <Button
-                onClick={optimizeRoute}
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
-                disabled={shoppingList.optimized || isOptimizing}
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                {isOptimizing ? "Otimizando..." : (shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota")}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Botão Otimizar Rota - Versão Desktop */}
+            <div className="hidden lg:block">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardContent className="p-6">
+                  <Button
+                    onClick={optimizeRoute}
+                    className="w-full bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
+                    disabled={shoppingList.optimized || isOptimizing}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {isOptimizing ? "Otimizando..." : (shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota")}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         {/* Products List - Mantido igual */}
         <div className="space-y-6">
@@ -510,8 +522,20 @@ export default function ViewShoppingList() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold">{group.company.name}</h3>
-                          {group.company.raw_address && (
-                            <p className="text-xs text-muted-foreground">{group.company.raw_address}</p>
+                          {group.company.address && (
+                            <>
+                              {group.company.address.geocode_status === 'done' && (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${group.company.address.latitude},${group.company.address.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 underline text-xs"
+                                >
+                                  Ver no mapa
+                                </a>
+                              )}
+                              <p className="text-xs text-muted-foreground">{group.company.address.full_address}</p>
+                            </>
                           )}
                         </div>
                       </div>
@@ -665,22 +689,24 @@ export default function ViewShoppingList() {
         </div>
 
         {/* Actions - Mantido igual */}
-        <div className="flex justify-center gap-4 pt-6">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/list/${shoppingList.id}/edit`)}
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Editar Lista
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
-            disabled={shoppingList.status === "completed"}
-            onClick={handleCompleteList}
-          >
-            {shoppingList.status === "completed" ? "Lista Concluída" : "Marcar como Concluída"}
-          </Button>
-        </div>
+        {user.user && (
+          <div className="flex justify-center gap-4 pt-6">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/list/${shoppingList.id}/edit`)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Editar Lista
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
+              disabled={shoppingList.status === "completed"}
+              onClick={handleCompleteList}
+            >
+              {shoppingList.status === "completed" ? "Lista Concluída" : "Marcar como Concluída"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
