@@ -23,6 +23,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import EditShoppingList from "./pages/client/EditShoppingLIst";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
+import { UserCompanyAccessRequest } from "./components/forms/UserCompanyAccessRequest";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,11 @@ const App = () => (
                 <Route path="/new-list" element={<NewShoppingList />} />
                 <Route path="/list/:listId/edit" element={<EditShoppingList />} />
                 <Route path="/list/:id" element={<ViewShoppingList />} />
+
+                {/* USUÁRIOS DO TIPO COMPANY */}
+                <Route path="/request-company" element={<ProtectedRoute allowedTypes={['company']}>
+                  <UserCompanyAccessRequest />
+                </ProtectedRoute>} />
 
                 {/* USUÁRIOS TIPO CLIENTE */}
                 {/* PRODUTOS */}
