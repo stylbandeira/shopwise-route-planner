@@ -9,6 +9,7 @@ import { Building2, Search, Edit3, Trash2, Plus, ArrowLeft, Globe, MapPin } from
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
+import { useUser } from "@/contexts/UserContext";
 
 interface Company {
     id: number;
@@ -16,14 +17,19 @@ interface Company {
     email: string;
     cnpj: string;
     website?: string;
-    address: string;
+    full_address: string;
     total_products: number;
     webhookUrl?: string;
     status: 'active' | 'inactive' | 'pending';
+    ownership_situation: 'active' | 'inactive' | 'pending';
     created_at: string;
 }
 
-export default function ManageCompanies() {
+interface Props {
+    endpoint: string;
+}
+
+export default function ManageCompanies({ endpoint }: Props) {
     const navigate = useNavigate();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +37,7 @@ export default function ManageCompanies() {
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [paginationMeta, setPaginationMeta] = useState<any>(null);
     const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+    const user = useUser();
 
     useEffect(() => {
         fetchCompanies();
@@ -66,7 +73,8 @@ export default function ManageCompanies() {
             if (searchTerm) params.search = searchTerm;
             if (status !== "all") params.status = status;
 
-            const response = await api.get("/admin/companies", { params });
+            const response = await api.get(endpoint, { params });
+            console.log(response.data.data);
 
             setCompanies(response.data.data);
             setPaginationMeta(response.data.meta);
@@ -124,56 +132,64 @@ export default function ManageCompanies() {
             <div className="container mx-auto px-4 py-6 space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate('/')}
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                        <div>
-                            <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
-                            <p className="text-muted-foreground">
-                                Gerencie todas as empresas cadastradas na plataforma
-                            </p>
-                        </div>
-                    </div>
-                    <Button
-                        onClick={() => navigate('/admin/companies/new')}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Nova Empresa
-                    </Button>
+                    {user.user.type === 'admin' && (
+                        <>
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => navigate('/')}
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </Button>
+                                <div>
+                                    <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
+                                    <p className="text-muted-foreground">
+                                        Gerencie todas as empresas cadastradas na plataforma
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={() => navigate('/admin/companies/new')}
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Nova Empresa
+                            </Button>
+                        </>
+                    )}
                 </div>
 
                 {/* Filtros */}
-                <Card className="border-0 shadow-soft">
-                    <CardContent className="p-6">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar por nome, email ou CNPJ..."
-                                    className="pl-10"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                            </div>
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-full sm:w-48">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos os status</SelectItem>
-                                    <SelectItem value="active">Ativo</SelectItem>
-                                    <SelectItem value="inactive">Inativo</SelectItem>
-                                    <SelectItem value="pending">Pendente</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
+                {user.user.type === 'admin' && (
+                    <>
+                        <Card className="border-0 shadow-soft">
+                            <CardContent className="p-6">
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Buscar por nome, email ou CNPJ..."
+                                            className="pl-10"
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                        <SelectTrigger className="w-full sm:w-48">
+                                            <SelectValue placeholder="Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todos os status</SelectItem>
+                                            <SelectItem value="active">Ativo</SelectItem>
+                                            <SelectItem value="inactive">Inativo</SelectItem>
+                                            <SelectItem value="pending">Pendente</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
+                )}
 
                 {/* Tabela de Empresas */}
                 <Card className="border-0 shadow-soft">
@@ -189,10 +205,19 @@ export default function ManageCompanies() {
                                 <TableRow>
                                     <TableHead>Empresa</TableHead>
                                     <TableHead>CNPJ</TableHead>
-                                    <TableHead>Produtos</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Cadastro</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
+                                    {user.user.type === 'company' && (
+                                        <>
+                                            <TableHead>Solicitação</TableHead>
+                                        </>
+                                    )}
+                                    {user.user.type === 'admin' && (
+                                        <>
+                                            <TableHead>Produtos</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Cadastro</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
+                                        </>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -213,7 +238,7 @@ export default function ManageCompanies() {
                                                 </div>
                                                 <div className="flex items-start gap-1 text-xs text-muted-foreground mt-1">
                                                     <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                                    <span>{company.address}</span>
+                                                    <span>{company.full_address}</span>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -222,23 +247,34 @@ export default function ManageCompanies() {
                                                 {company.cnpj}
                                             </code>
                                         </TableCell>
-                                        <TableCell>
-                                            <span className="font-medium">{company.total_products.toLocaleString()}</span>
-                                        </TableCell>
-                                        <TableCell>{getStatusBadge(company.status)}</TableCell>
-                                        <TableCell>
-                                            {new Date(company.created_at).toLocaleDateString('pt-BR')}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/companies/edit/${company.id}`)}>
-                                                    <Edit3 className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id)}>
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+                                        {user.user.type === 'company' && (
+                                            <>
+                                                <TableCell>{getStatusBadge(company.ownership_situation)}</TableCell>
+                                            </>
+                                        )}
+
+                                        {/* AÇÕES */}
+                                        {user.user.type === 'admin' && (
+                                            <>
+                                                <TableCell>
+                                                    <span className="font-medium">{company.total_products.toLocaleString()}</span>
+                                                </TableCell>
+                                                <TableCell>{getStatusBadge(company.status)}</TableCell>
+                                                <TableCell>
+                                                    {new Date(company.created_at).toLocaleDateString('pt-BR')}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/companies/edit/${company.id}`)}>
+                                                            <Edit3 className="w-4 h-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id)}>
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>
