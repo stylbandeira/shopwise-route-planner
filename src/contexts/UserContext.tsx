@@ -52,7 +52,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
 
             const response = await api.get('/user');
-            console.log(response.data.user);
             setUser({
                 type: response.data.user.type,
                 name: response.data.user.name,
