@@ -74,7 +74,6 @@ export default function ManageCompanies({ endpoint }: Props) {
             if (status !== "all") params.status = status;
 
             const response = await api.get(endpoint, { params });
-            console.log(response.data.data);
 
             setCompanies(response.data.data);
             setPaginationMeta(response.data.meta);
