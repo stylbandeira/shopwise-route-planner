@@ -12,7 +12,18 @@ interface User {
     notifications: number;
     notificationList: [];
     token?: string;
-    companies?: [];
+    activeCompanies?: [];
+}
+
+interface Company {
+    name: string,
+    cnpj: string,
+    img: string,
+    website: string,
+    status: string,
+    phone: string,
+    description: string,
+    raw_address: string,
 }
 
 interface UserContextType {
@@ -20,6 +31,7 @@ interface UserContextType {
     loading: boolean;
     login: (token: string, userData: User) => void;
     logout: () => void;
+    activeCompanies?: Company[];
     refreshUser: () => Promise<void>;
 }
 
@@ -40,12 +52,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
 
             const response = await api.get('/user');
+            console.log(response.data.user);
             setUser({
                 type: response.data.user.type,
                 name: response.data.user.name,
                 email: response.data.user.email,
                 points: response.data.user.points,
-                companies: response.data.user.companies,
+                activeCompanies: response.data.user.activeCompanies,
                 token: token,
                 hasNotification: response.data.user.hasNotification,
                 notifications: response.data.user.notifications,
