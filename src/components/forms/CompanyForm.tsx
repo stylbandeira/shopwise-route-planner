@@ -25,6 +25,10 @@ interface CompanyFormProps {
     onCancel?: () => void;
     isEditing?: boolean;
     isLoading?: boolean;
+    showStatus?: boolean;
+    title?: string;
+    subtitle?: string;
+    saveButtonText?: string;
 }
 
 const defaultCompanyData: CompanyFormData = {
@@ -43,7 +47,8 @@ export function CompanyForm({
     onSubmit,
     onCancel,
     isEditing = false,
-    isLoading = false
+    isLoading = false,
+    showStatus = true,
 }: CompanyFormProps) {
     const navigate = useNavigate();
     const [formData, setFormData] = useState<CompanyFormData>(initialData);
@@ -173,16 +178,18 @@ export function CompanyForm({
                         icon={<Globe className="w-4 h-4" />}
                     />
 
-                    <FormSelect
-                        label="Status"
-                        name="status"
-                        value={formData.status}
-                        onValueChange={(value) => handleSelectChange("status", value)}
-                        options={statusOptions}
-                        required
-                        disabled={isLoading}
-                        error={errors.status?.[0]}
-                    />
+                    {showStatus && (
+                        <FormSelect
+                            label="Status"
+                            name="status"
+                            value={formData.status}
+                            onValueChange={(value) => handleSelectChange("status", value)}
+                            options={statusOptions}
+                            required
+                            disabled={isLoading}
+                            error={errors.status?.[0]}
+                        />
+                    )}
 
                     <ImageUpload
                         label="Imagem da Empresa"

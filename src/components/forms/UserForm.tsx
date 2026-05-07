@@ -1,4 +1,3 @@
-// components/forms/CompanyForm.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FormLayout } from "./FormLayout";
