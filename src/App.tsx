@@ -60,11 +60,10 @@ const App = () => (
 
                 <Route path="/email-verification" element={<EmailConfirmationScreen />} />
                 <Route path="/verify-email" element={<EmailVerificationPage />} />
-                <Route path="/admin/companies" element={<ManageCompanies />} />
 
                 {/* ROTAS DE COMPANIES */}
                 <Route path="/admin/companies" element={<ProtectedRoute allowedTypes={['admin']}>
-                  <ManageCompanies />
+                  <ManageCompanies endpoint="/admin/companies" />
                 </ProtectedRoute>} />
                 <Route path="/admin/companies/new" element={<ProtectedRoute allowedTypes={['admin']}>
                   <AddCompany />
