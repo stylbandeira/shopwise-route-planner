@@ -80,6 +80,9 @@ export default function AddCompany() {
                     handleSuccess();
                 }}
                 onCancel={() => navigate("/admin/companies")}
+                showStatus
+                title="Nova Empresa"
+                saveButtonText="Cadastrar Empresa"
             />
         </div>
     );

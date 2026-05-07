@@ -117,6 +117,9 @@ export default function EditCompany() {
                 onCancel={handleCancel}
                 isEditing={true}
                 isLoading={isSubmitting}
+                showStatus
+                title="Editar Empresa"
+                saveButtonText="Atualizar Empresa"
             />
         </div>
     );
