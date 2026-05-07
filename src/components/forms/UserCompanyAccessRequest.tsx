@@ -5,6 +5,7 @@ import { CompanyForm } from "./CompanyForm";
 import { Building2, Search, Loader2, Building, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
+import ManageCompanies from "@/pages/admin/ManageCompanies";
 
 type Company = {
   id: number;
@@ -13,7 +14,7 @@ type Company = {
 };
 
 export function UserCompanyAccessRequest() {
-  const [mode, setMode] = useState<"search" | "create">("search");
+  const [mode, setMode] = useState<"search" | "create" | "view">("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export function UserCompanyAccessRequest() {
 
     try {
       setLoading(true);
-      const res = await api.get("/admin/companies", {
+      const res = await api.get("/companies", {
         params: { search: searchTerm }
       });
       setResults(res.data.data || []);
@@ -195,6 +196,29 @@ export function UserCompanyAccessRequest() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
             </button>
+
+            <button
+              onClick={() => {
+                setMode("view");
+                setQuery("");
+                setResults([]);
+              }}
+              className={`
+                py-3 px-1 font-medium text-sm transition-all duration-200 relative
+                ${mode === "view"
+                  ? "text-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
+                }
+              `}
+            >
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                Solicitações
+              </div>
+              {mode === "view" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+              )}
+            </button>
           </nav>
         </div>
 
@@ -304,6 +328,10 @@ export function UserCompanyAccessRequest() {
               subtitle="Preencha os dados da empresa e solicite acesso"
               saveButtonText="Solicitar vínculo"
             />
+          )}
+
+          {mode === "view" && (
+            <ManageCompanies endpoint="/user/company-requests"></ManageCompanies>
           )}
         </div>
       </div>
