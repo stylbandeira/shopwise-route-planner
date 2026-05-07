@@ -150,12 +150,10 @@ export function DashboardHeader({ userType, userName, userPoints, user, onLogout
               </div>
             )}
 
-            {userType === "client" && user?.hasNotification && (
-              <NotificationsBell
-                notifications={user.notificationList || []}
-                unreadCount={user.notifications || 0}
-              />
-            )}
+            <NotificationsBell
+              notifications={user.notificationList || []}
+              unreadCount={user.notifications || 0}
+            />
 
             {/* Avatar com tooltip indicando tipo */}
             <div className="relative group">
