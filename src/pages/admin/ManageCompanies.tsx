@@ -21,7 +21,7 @@ interface Company {
     total_products: number;
     webhookUrl?: string;
     status: 'active' | 'inactive' | 'pending';
-    ownership_situation: 'active' | 'inactive' | 'pending';
+    ownership_status: 'active' | 'inactive' | 'pending';
     created_at: string;
 }
 
@@ -249,7 +249,7 @@ export default function ManageCompanies({ endpoint }: Props) {
                                         </TableCell>
                                         {user.user.type === 'company' && (
                                             <>
-                                                <TableCell>{getStatusBadge(company.ownership_situation)}</TableCell>
+                                                <TableCell>{getStatusBadge(company.ownership_status)}</TableCell>
                                             </>
                                         )}
 
