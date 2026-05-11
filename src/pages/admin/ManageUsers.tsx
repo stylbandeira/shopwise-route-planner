@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 
 interface User {
   id: number;
@@ -295,6 +296,17 @@ export default function ManageUsers() {
             onRowClick={(user) => setSelectedUser(user)}
           />
         </CardContent>
+
+        {paginationMeta && paginationMeta.last_page > 1 && (
+          <div className="mt-4">
+            <CustomPagination
+              paginationMeta={paginationMeta}
+              search={search}
+              filterStatus={filterStatus}
+              onPageChange={(page: number) => fetchUsers(page)}
+            />
+          </div>
+        )}
       </Card>
 
       <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
