@@ -6,6 +6,7 @@ import { Building2, Search, Loader2, Building, AlertCircle, ArrowLeft } from "lu
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import ManageCompanies from "@/pages/admin/ManageCompanies";
+import { useUser } from "@/contexts/UserContext";
 
 type Company = {
   id: number;
@@ -20,6 +21,7 @@ export function UserCompanyAccessRequest() {
   const [loading, setLoading] = useState(false);
   const [requestingId, setRequestingId] = useState<number | null>(null);
   const navigate = useNavigate();
+  const user = useUser();
 
   // Função de busca
   const searchCompanies = useCallback(async (searchTerm: string) => {
@@ -214,6 +216,12 @@ export function UserCompanyAccessRequest() {
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4" />
                 Solicitações
+
+                {user?.user?.pendingCompanies?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {user?.user?.pendingCompanies?.length > 9 ? '9+' : user?.user?.pendingCompanies?.length}
+                  </span>
+                )}
               </div>
               {mode === "view" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
