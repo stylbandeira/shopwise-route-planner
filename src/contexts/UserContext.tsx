@@ -13,6 +13,7 @@ interface User {
     notificationList: [];
     token?: string;
     activeCompanies?: [];
+    pendingCompanies?: [];
 }
 
 interface Company {
@@ -32,6 +33,7 @@ interface UserContextType {
     login: (token: string, userData: User) => void;
     logout: () => void;
     activeCompanies?: Company[];
+    pendingCompanies?: Company[];
     refreshUser: () => Promise<void>;
 }
 
@@ -58,6 +60,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 email: response.data.user.email,
                 points: response.data.user.points,
                 activeCompanies: response.data.user.activeCompanies,
+                pendingCompanies: response.data.user.pendingCompanies,
                 token: token,
                 hasNotification: response.data.user.hasNotification,
                 notifications: response.data.user.notifications,
