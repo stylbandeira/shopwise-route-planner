@@ -1,31 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { UserType } from '@/components/auth/LoginForm';
 import api from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
-
-interface User {
-    type: UserType;
-    name: string;
-    email?: string;
-    points?: number;
-    hasNotification: boolean;
-    notifications: number;
-    notificationList: [];
-    token?: string;
-    activeCompanies?: [];
-    pendingCompanies?: [];
-}
-
-interface Company {
-    name: string,
-    cnpj: string,
-    img: string,
-    website: string,
-    status: string,
-    phone: string,
-    description: string,
-    raw_address: string,
-}
+import { Company } from '@/types/company';
+import { User } from '@/types/user';
 
 interface UserContextType {
     user: User | null;
@@ -62,7 +39,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 activeCompanies: response.data.user.activeCompanies,
                 pendingCompanies: response.data.user.pendingCompanies,
                 token: token,
-                hasNotification: response.data.user.hasNotification,
                 notifications: response.data.user.notifications,
                 notificationList: response.data.user.notificationList,
             });
