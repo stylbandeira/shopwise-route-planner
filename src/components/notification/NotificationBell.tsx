@@ -32,6 +32,7 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
         // Aqui você chamaria sua API
         const response = api.post(`events/check-all`, {
             markAll: true,
+            notifications
         });
         console.log('Marcar todas como lidas');
     };
