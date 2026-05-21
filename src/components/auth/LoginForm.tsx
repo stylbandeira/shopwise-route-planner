@@ -8,8 +8,7 @@ import { ShoppingCart, Building2, Shield, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { useUser } from "@/contexts/UserContext";
 import { CustomLogo } from "../oiai_ui/CustomLogo";
-
-export type UserType = "client" | "company" | "admin";
+import { UserType } from "@/types/user";
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
