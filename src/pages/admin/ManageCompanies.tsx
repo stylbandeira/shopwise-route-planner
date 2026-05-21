@@ -10,20 +10,8 @@ import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 import { useUser } from "@/contexts/UserContext";
+import type { Company } from "@/types/company";
 
-interface Company {
-    id: number;
-    name: string;
-    email: string;
-    cnpj: string;
-    website?: string;
-    full_address: string;
-    total_products: number;
-    webhookUrl?: string;
-    status: 'active' | 'inactive' | 'pending';
-    ownership_status: 'active' | 'inactive' | 'pending';
-    created_at: string;
-}
 
 interface Props {
     endpoint: string;
