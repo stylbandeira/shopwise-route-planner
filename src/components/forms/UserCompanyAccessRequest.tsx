@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import ManageCompanies from "@/pages/admin/ManageCompanies";
 import { useUser } from "@/contexts/UserContext";
+import { CompanySelector } from "../company/CompanySelector";
 
 type Company = {
   id: number;
@@ -21,6 +22,7 @@ export function UserCompanyAccessRequest() {
   const [loading, setLoading] = useState(false);
   const [requestingId, setRequestingId] = useState<number | null>(null);
   const navigate = useNavigate();
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const user = useUser();
 
   // Função de busca
@@ -123,6 +125,11 @@ export function UserCompanyAccessRequest() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      <CompanySelector
+        companies={user.user.activeCompanies ?? []}
+        selectedCompanyId={selectedCompanyId}
+        onChange={setSelectedCompanyId}
+      />
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Header */}
         <div className="border-b border-gray-200 bg-gray-50 rounded-t-lg">
