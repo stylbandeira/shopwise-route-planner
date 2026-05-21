@@ -1,4 +1,3 @@
-// contexts/NotificationContext.tsx
 import { NotificationToast } from '@/components/notification/NotificationToast';
 import { createContext, useContext, useState, ReactNode } from 'react';
 
