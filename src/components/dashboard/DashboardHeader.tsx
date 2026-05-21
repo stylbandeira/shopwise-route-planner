@@ -1,4 +1,3 @@
-import { UserType } from "@/components/auth/LoginForm";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,18 +6,13 @@ import { CustomLogo } from "../oiai_ui/CustomLogo";
 import NotificationsBell from "../notification/NotificationBell";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-
-interface userType {
-  hasNotification: boolean;
-  notificationList: [];
-  notifications: number;
-}
+import { User, UserType } from "@/types/user";
 
 interface DashboardHeaderProps {
   userType: UserType;
   userName: string;
   userPoints?: number;
-  user?: userType;
+  user?: User;
   onLogout: () => void;
 }
 
