@@ -1,4 +1,3 @@
-// src/pages/admin/ManageUsers.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,19 +11,7 @@ import { TableFilters } from "@/components/admin/TableFilters";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
-
-interface User {
-  id: number;
-  name: string;
-  type: 'client' | 'company' | 'admin';
-  email: string;
-  cpf: string;
-  points: number;
-  reputation: number;
-  status: 'active' | 'inactive' | 'suspended';
-  created_at: string;
-  deleted_at: string | null;
-}
+import { User } from "@/types/user";
 
 export default function ManageUsers() {
   const navigate = useNavigate();
