@@ -146,7 +146,7 @@ export function DashboardHeader({ userType, userName, userPoints, user, onLogout
 
             <NotificationsBell
               notifications={user.notificationList || []}
-              unreadCount={user.notifications || 0}
+              unreadCount={user?.notifications?.length || 0}
             />
 
             {/* Avatar com tooltip indicando tipo */}

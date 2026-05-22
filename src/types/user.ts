@@ -7,7 +7,7 @@ export interface User {
     points?: number;
     reputation: number;
     cpf: string;
-    notifications: number;
+    notifications: [];
     notificationList: [];
     token?: string;
     activeCompanies?: [];
