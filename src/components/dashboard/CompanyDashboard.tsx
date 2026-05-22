@@ -27,8 +27,10 @@ export function CompanyDashboard() {
   const hasCompanies = Boolean(user?.user?.activeCompanies?.length);
 
   const fetchDashData = async () => {
+    const company_id = user?.user?.activeCompanies?.[0]?.id;
+    //TODO - PEGAR DA SELEÇÃO
     try {
-      const response = await api.get("/companies/dashboard");
+      const response = await api.get('/companies/' + company_id + '/dashboard');
       setDashboardData(response.data);
     } catch (error) {
       console.error("Erro ao buscar dashboard:", error);
