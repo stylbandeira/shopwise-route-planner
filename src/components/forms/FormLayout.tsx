@@ -14,6 +14,7 @@ interface FormLayoutProps {
     showBackButton?: boolean;
     saveButtonText?: string;
     cancelButtonText?: string;
+    disableSave?: boolean;
     icon?: ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function FormLayout({
     showBackButton = true,
     saveButtonText = "Salvar",
     cancelButtonText = "Cancelar",
+    disableSave = false,
     icon
 }: FormLayoutProps) {
     const navigate = useNavigate();
@@ -82,7 +84,7 @@ export function FormLayout({
                         {onSave && (
                             <Button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || disableSave}
                             >
                                 {isLoading ? (
                                     <>
