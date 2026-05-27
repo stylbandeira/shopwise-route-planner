@@ -1,3 +1,5 @@
+import { Notification } from "./notification";
+
 export interface User {
     id: number;
     type: UserType;
@@ -8,7 +10,7 @@ export interface User {
     reputation: number;
     cpf: string;
     notifications: [];
-    notificationList: [];
+    notificationList: Notification[];
     token?: string;
     activeCompanies?: [];
     pendingCompanies?: [];
