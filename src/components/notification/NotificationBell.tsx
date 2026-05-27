@@ -3,15 +3,9 @@ import { Bell, Check, X, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '@/lib/api';
-
-interface Notification {
-    id: number;
-    description: string;
-    date: string;
-    points?: number;
-    read: boolean;
-    type: 'info' | 'success' | 'warning' | 'points';
-}
+import { useNavigate } from 'react-router-dom';
+import { getNotificationLink } from "@/utils/notificationsLink";
+import { Notification } from '@/types/notification';
 
 interface Props {
     notifications: Notification[];
@@ -20,12 +14,25 @@ interface Props {
 
 const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
 
     const handleMarkAsRead = (id: number) => {
-        // Aqui você chamaria sua API
         const response = api.put(`events/${id}`, {
             checked: true,
         });
+    };
+
+    const handleOpenLink = async (
+        event: React.MouseEvent,
+        notification: Notification,
+    ) => {
+        event.stopPropagation();
+
+        const link = getNotificationLink(notification);
+
+
+        setIsOpen(false);
+        navigate(link);
     };
 
     const handleMarkAllAsRead = () => {
@@ -34,7 +41,6 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
             markAll: true,
             notifications
         });
-        console.log('Marcar todas como lidas');
     };
 
     const formatDate = (dateString: string) => {
@@ -118,14 +124,17 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
                                         </div>
 
                                         <div className="flex-1">
-                                            <p className="text-sm">{notif.description}</p>
+                                            <p
+                                                onClick={(event) => handleOpenLink(event, notif)}
+                                                className="text-sm">{notif.description}
+                                            </p>
 
                                             <div className="flex justify-between items-center mt-2">
                                                 <span className="text-xs text-gray-500">
-                                                    {formatDate(notif.date)}
+                                                    {formatDate(notif.created_at)}
                                                 </span>
 
-                                                {notif.points && notif.points > 0 && (
+                                                {notif.points > 0 && (
                                                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
                                                         +{notif.points} pontos
                                                     </span>
@@ -133,7 +142,7 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
                                             </div>
                                         </div>
 
-                                        {!notif.read && (
+                                        {!notif.is_new && (
                                             <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1" />
                                         )}
                                     </div>
@@ -142,8 +151,9 @@ const NotificationsBell: React.FC<Props> = ({ notifications, unreadCount }) => {
                         )}
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 
