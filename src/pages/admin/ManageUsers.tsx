@@ -18,6 +18,7 @@ export default function ManageUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [paginationMeta, setPaginationMeta] = useState<any>(null);
@@ -36,14 +37,22 @@ export default function ManageUsers() {
   ];
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchUsers();
-  }, [search, filterType, filterStatus]);
+  }, [debouncedSearch, filterType, filterStatus]);
 
   const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
       const params: any = { page };
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (filterType !== "all") params.type = filterType;
       if (filterStatus !== "all") params.status = filterStatus;
 

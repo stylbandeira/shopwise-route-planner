@@ -35,7 +35,7 @@ export function TableFilters({
 }: TableFiltersProps) {
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-    const FiltersContent = () => (
+    const renderFiltersContent = () => (
         <>
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -46,6 +46,7 @@ export function TableFilters({
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
+
             {filters.map((filter) => (
                 <Select key={filter.key} value={filter.value} onValueChange={filter.onChange}>
                     <SelectTrigger className="w-full sm:w-48">
@@ -68,7 +69,7 @@ export function TableFilters({
         <>
             {/* Desktop Filters */}
             <div className="hidden md:flex flex-col sm:flex-row gap-4">
-                <FiltersContent />
+                {renderFiltersContent()}
             </div>
 
             {/* Mobile Filters Button */}
@@ -90,7 +91,7 @@ export function TableFilters({
                             <div className="space-y-4 py-4">
                                 <h3 className="font-semibold text-lg">Filtros</h3>
                                 <div className="space-y-3">
-                                    <FiltersContent />
+                                    {renderFiltersContent()}
                                 </div>
                                 <Button
                                     className="w-full mt-4"
