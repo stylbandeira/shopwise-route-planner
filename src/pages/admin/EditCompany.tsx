@@ -30,8 +30,6 @@ export default function EditCompany() {
                 img: logoUrl // Sobrescreve com URL completa
             });
 
-            console.log(logoUrl)
-
         } catch (error) {
             console.error('Erro ao carregar empresa:', error);
         } finally {
@@ -45,7 +43,6 @@ export default function EditCompany() {
     }
 
     const handleSubmit = async (formData: any) => {
-        console.log('📤 Dados para atualização:', formData);
         setIsSubmitting(true);
 
         try {
@@ -69,12 +66,9 @@ export default function EditCompany() {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-
-                console.log('Empresa atualizada com imagem:', response.data);
             } else {
                 // Sem imagem nova, envia JSON normal
                 const response = await api.put(`/admin/companies/${id}`, formData);
-                console.log('✅ Empresa atualizada:', response.data);
             }
 
             navigate("/admin/companies", {
