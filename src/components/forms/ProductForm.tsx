@@ -71,8 +71,8 @@ export function ProductForm({
                     api.get("/categories")
                 ]);
 
-                setUnities(unitiesRes.data.unities);
-                setCategories(categoriesRes.data.categories);
+                setUnities(unitiesRes.data.data);
+                setCategories(categoriesRes.data.data);
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
             } finally {
