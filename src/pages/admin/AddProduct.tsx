@@ -30,13 +30,13 @@ export default function AddProduct() {
                     }
                 });
 
-                await api.post("/admin/products", formDataToSend, {
+                await api.post("/products", formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
             } else {
-                const response = await api.post("/admin/products", formData);
+                const response = await api.post("/products", formData);
                 console.log('Resposta da API:', response);
             }
 
