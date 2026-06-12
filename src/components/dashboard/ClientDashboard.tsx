@@ -109,7 +109,7 @@ export function ClientDashboard() {
     const params: any = { page };
     try {
       const response = await api.get("/lists", { params });
-      setItensLists(response.data.itensLists);
+      setItensLists(response.data.data);
     } catch (error) {
       console.error("Error fetching lists:", error);
     } finally {
