@@ -16,6 +16,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     const [name, setName] = useState("");
+    const [cpf, setCpf] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,6 +42,8 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         try {
             const response = await api.post("/register", {
                 name,
+                cpf,
+                userType,
                 email,
                 password,
                 password_confirmation: confirmPassword,
@@ -127,6 +130,19 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
                             required
                         />
                         {errors.name && <p className="text-red-500 text-sm">{errors.name[0]}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="cpf">CPF</Label>
+                        <Input
+                            id="cpf"
+                            type="text"
+                            value={cpf}
+                            onChange={(e) => setCpf(e.target.value)}
+                            placeholder="CPF do Usuário"
+                            required
+                        />
+                        {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf[0]}</p>}
                     </div>
 
                     <div className="space-y-2">
