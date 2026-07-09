@@ -538,7 +538,7 @@ export function ClientDashboard() {
         onSuccess={(data) => {
           setShowNotification(true);
           setNotificationData({
-            message: 'Código validado com sucesso!',
+            message: data?.message || 'Código validado com sucesso!',
             type: 'success'
           });
           fetchDashData(); // Atualiza dados após sucesso
