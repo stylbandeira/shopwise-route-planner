@@ -77,6 +77,7 @@ export default function ViewShoppingList() {
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isRecreating, setIsRecreating] = useState(false);
   const [isOptimizeSheetOpen, setIsOptimizeSheetOpen] = useState(false);
   const user = useUser();
 
@@ -107,6 +108,36 @@ export default function ViewShoppingList() {
 
     window.location.reload();
   }
+
+  const handleRecreateList = async () => {
+    if (!shoppingList || isRecreating) return;
+
+    setIsRecreating(true);
+
+    try {
+      const products = (shoppingList.products || []).map(product => ({
+        product,
+        quantity: getProductQuantity(product),
+        unity: getProductUnity(product),
+      }));
+
+      const response = await api.post("/lists", {
+        name: shoppingList.name + '(copy)',
+        products,
+      });
+      const newListId = response.data?.list?.id ?? response.data?.id;
+
+      if (!newListId) {
+        throw new Error("A API não retornou o ID da nova lista.");
+      }
+
+      navigate(`/list/${newListId}`);
+    } catch (error) {
+      console.error("Erro ao refazer lista:", error);
+    } finally {
+      setIsRecreating(false);
+    }
+  };
 
   // Carregar dados
   useEffect(() => {
@@ -333,6 +364,7 @@ export default function ViewShoppingList() {
   const unoptimizedTotal = getUnoptimizedTotalValue();
   const totalItems = shoppingList.productsQuantity;
   const directProducts = getDirectProducts();
+  const isCompleted = shoppingList.status === "completed";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -366,10 +398,12 @@ export default function ViewShoppingList() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => navigate(`/list/${shoppingList.id}/edit`)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Editar Lista
-              </DropdownMenuItem>
+              {!isCompleted && (
+                <DropdownMenuItem onClick={() => navigate(`/list/${shoppingList.id}/edit`)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar Lista
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem>
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartilhar
@@ -440,7 +474,7 @@ export default function ViewShoppingList() {
           </Card>
         </div>
 
-        {user.user && (
+        {user.user && !isCompleted && (
           <>
             {/* Botão Otimizar Rota - Versão Mobile (Sheet) */}
             <div className="lg:hidden">
@@ -560,11 +594,13 @@ export default function ViewShoppingList() {
                             : 'bg-white hover:shadow-md border border-gray-100'
                             }`}
                         >
-                          <Checkbox
-                            checked={completedItems.has(product.id)}
-                            onCheckedChange={() => toggleItemComplete(product.id)}
-                            className="flex-shrink-0"
-                          />
+                          {!isCompleted && (
+                            <Checkbox
+                              checked={completedItems.has(product.id)}
+                              onCheckedChange={() => toggleItemComplete(product.id)}
+                              className="flex-shrink-0"
+                            />
+                          )}
 
                           <div className="flex-1 min-w-0">
                             <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
@@ -628,11 +664,13 @@ export default function ViewShoppingList() {
                         : 'bg-white hover:shadow-md border border-gray-100'
                         }`}
                     >
-                      <Checkbox
-                        checked={completedItems.has(product.id)}
-                        onCheckedChange={() => toggleItemComplete(product.id)}
-                        className="flex-shrink-0"
-                      />
+                      {!isCompleted && (
+                        <Checkbox
+                          checked={completedItems.has(product.id)}
+                          onCheckedChange={() => toggleItemComplete(product.id)}
+                          className="flex-shrink-0"
+                        />
+                      )}
 
                       <div className="flex-1 min-w-0">
                         <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
@@ -691,20 +729,31 @@ export default function ViewShoppingList() {
         {/* Actions - Mantido igual */}
         {user.user && (
           <div className="flex justify-center gap-4 pt-6">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/list/${shoppingList.id}/edit`)}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Editar Lista
-            </Button>
-            <Button
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
-              disabled={shoppingList.status === "completed"}
-              onClick={handleCompleteList}
-            >
-              {shoppingList.status === "completed" ? "Lista Concluída" : "Marcar como Concluída"}
-            </Button>
+            {!isCompleted && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/list/${shoppingList.id}/edit`)}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Editar Lista
+              </Button>
+            )}
+            {isCompleted ? (
+              <Button
+                className="bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
+                disabled={isRecreating}
+                onClick={handleRecreateList}
+              >
+                {isRecreating ? "Refazendo Lista..." : "Refazer Lista"}
+              </Button>
+            ) : (
+              <Button
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg transition-all"
+                onClick={handleCompleteList}
+              >
+                Marcar como Concluída
+              </Button>
+            )}
           </div>
         )}
       </div>
