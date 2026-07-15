@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, DollarSign, Edit, Trash2, Share2, Package, Store, MoreVertical, TrendingUp, LocateFixed, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
@@ -23,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ShoppingListProductRow } from "@/components/shopping-list/ShoppingListProductRow";
 
 interface Product {
   id: number;
@@ -755,45 +755,18 @@ export default function ViewShoppingList() {
                       const quantity = originalQuantities.get(product.id) || getProductQuantity(product);
 
                       return (
-                        <div
+                        <ShoppingListProductRow
                           key={product.id}
-                          className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
-                            ? 'bg-gray-50 opacity-75'
-                            : 'bg-white hover:shadow-md border border-gray-100'
-                            }`}
-                        >
-                          {!isCompleted && (
-                            <Checkbox
-                              checked={completedItems.has(product.id)}
-                              onCheckedChange={() => toggleItemComplete(product.id)}
-                              className="flex-shrink-0"
-                            />
-                          )}
-
-                          <div className="flex-1 min-w-0">
-                            <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
-                              }`}>
-                              {product.name}
-                            </h4>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="text-sm text-muted-foreground">
-                                {quantity} {unity}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {category}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-primary">
-                              R$ {(item.average_price * quantity).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              R$ {item.average_price.toFixed(2)}/{unity}
-                            </p>
-                          </div>
-                        </div>
+                          name={product.name}
+                          image={product.img}
+                          quantity={quantity}
+                          unity={unity}
+                          category={category}
+                          unitPrice={item.average_price}
+                          completed={completedItems.has(product.id)}
+                          canComplete={!isCompleted}
+                          onToggleComplete={() => toggleItemComplete(product.id)}
+                        />
                       );
                     })}
 
@@ -825,45 +798,18 @@ export default function ViewShoppingList() {
                   const quantity = getProductQuantity(product);
 
                   return (
-                    <div
+                    <ShoppingListProductRow
                       key={product.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
-                        ? 'bg-gray-50 opacity-75'
-                        : 'bg-white hover:shadow-md border border-gray-100'
-                        }`}
-                    >
-                      {!isCompleted && (
-                        <Checkbox
-                          checked={completedItems.has(product.id)}
-                          onCheckedChange={() => toggleItemComplete(product.id)}
-                          className="flex-shrink-0"
-                        />
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
-                          }`}>
-                          {product.name}
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-sm text-muted-foreground">
-                            {quantity} {unity}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {category}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-primary">
-                          R$ {((product.average_price || 0) * quantity).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          R$ {(product.average_price || 0).toFixed(2)}/{unity}
-                        </p>
-                      </div>
-                    </div>
+                      name={product.name}
+                      image={product.img}
+                      quantity={quantity}
+                      unity={unity}
+                      category={category}
+                      unitPrice={product.average_price || 0}
+                      completed={completedItems.has(product.id)}
+                      canComplete={!isCompleted}
+                      onToggleComplete={() => toggleItemComplete(product.id)}
+                    />
                   );
                 })}
 
