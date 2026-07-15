@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, MapPin, DollarSign, Edit, Trash2, Share2, Package, Store, MoreVertical, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, Edit, Trash2, Share2, Package, Store, MoreVertical, TrendingUp, LocateFixed, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import {
@@ -12,8 +11,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useUser } from "@/contexts/UserContext";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ShoppingListProductRow } from "@/components/shopping-list/ShoppingListProductRow";
 
 interface Product {
   id: number;
@@ -52,8 +61,19 @@ interface CompanyGroup {
       latitude: string;
       longitude: string;
     };
+    distance?: number | string;
+    isTooFar?: boolean;
   };
   products: CompanyProduct[];
+  distance?: number | string;
+  isTooFar?: boolean;
+}
+
+interface AddressSuggestion {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
 }
 
 interface ShoppingList {
@@ -79,26 +99,90 @@ export default function ViewShoppingList() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isRecreating, setIsRecreating] = useState(false);
   const [isOptimizeSheetOpen, setIsOptimizeSheetOpen] = useState(false);
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [maxDistance, setMaxDistance] = useState("25");
+  const [locationMessage, setLocationMessage] = useState("");
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const skipNextAddressSearch = useRef(false);
+  const changedListId = useRef<string | undefined>(undefined);
   const user = useUser();
+
+  useEffect(() => {
+    if (skipNextAddressSearch.current) {
+      skipNextAddressSearch.current = false;
+      return;
+    }
+    const query = addressQuery.trim();
+    if (query.length < 5) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setIsSearchingAddress(true);
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          format: "jsonv2",
+          addressdetails: "1",
+          limit: "5",
+          countrycodes: "br",
+        });
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+          signal: controller.signal,
+          headers: { "Accept-Language": "pt-BR" },
+        });
+        if (!response.ok) throw new Error("Não foi possível pesquisar o endereço.");
+        setAddressSuggestions(await response.json());
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") setAddressSuggestions([]);
+      } finally {
+        if (!controller.signal.aborted) setIsSearchingAddress(false);
+      }
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [addressQuery]);
 
   // ARMAZENA AS QUANTIDADES ORIGINAIS (vindas de list.products)
   const [originalQuantities, setOriginalQuantities] = useState<Map<number, number>>(new Map());
 
-  const getProductUnity = (product: any): string => {
+  const getProductUnity = (product: Product): string => {
     if (product.unity?.abbreviation) return product.unity.abbreviation;
     if (product.unity?.name) return product.unity.name;
-    if (product.unity && typeof product.unity === 'string') return product.unity;
     return 'un';
   };
 
-  const getProductCategory = (product: any): string => {
+  const getProductCategory = (product: Product): string => {
     if (product.category?.name) return product.category.name;
-    if (typeof product.category === 'string') return product.category;
     return 'Produto';
   };
 
-  const getProductQuantity = (product: any): number => {
+  const getProductQuantity = (product: Product): number => {
     return product.quantity || product.unity_quantity || 1;
+  };
+
+  const getUniqueProducts = (products: Product[]): Product[] => {
+    const uniqueProducts = new Map<number, Product>();
+    products.forEach((product) => {
+      if (!uniqueProducts.has(product.id)) uniqueProducts.set(product.id, product);
+    });
+    return Array.from(uniqueProducts.values());
+  };
+
+  const getUniqueCompanyProducts = (products: CompanyProduct[]): CompanyProduct[] => {
+    const uniqueProducts = new Map<number, CompanyProduct>();
+    products.forEach((item) => {
+      if (!uniqueProducts.has(item.product.id)) uniqueProducts.set(item.product.id, item);
+    });
+    return Array.from(uniqueProducts.values());
   };
 
   const handleCompleteList = async () => {
@@ -115,10 +199,10 @@ export default function ViewShoppingList() {
     setIsRecreating(true);
 
     try {
-      const products = (shoppingList.products || []).map(product => ({
-        product,
-        quantity: getProductQuantity(product),
-        unity: getProductUnity(product),
+      const uniqueProducts = getUniqueProducts(shoppingList.products || []);
+      const products = uniqueProducts.map(product => ({
+        product: { id: product.id },
+        quantity: originalQuantities.get(product.id) ?? getProductQuantity(product),
       }));
 
       const response = await api.post("/lists", {
@@ -144,6 +228,9 @@ export default function ViewShoppingList() {
     const loadData = async () => {
       try {
         setLoading(true);
+        changedListId.current = undefined;
+        setHasUnsavedChanges(false);
+        setCompletedItems(new Set());
         const response = await api.get(`/lists/${id}`);
         const data = response.data.list;
 
@@ -188,13 +275,14 @@ export default function ViewShoppingList() {
   }, [id]);
 
   const saveCompletedItems = useCallback(async () => {
-    if (!hasUnsavedChanges) return;
+    if (!hasUnsavedChanges || !id || changedListId.current !== id) return;
 
     try {
       await api.put(`/listItems/${id}`, {
         completed_items: Array.from(completedItems)
       });
       setHasUnsavedChanges(false);
+      changedListId.current = undefined;
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
@@ -216,6 +304,7 @@ export default function ViewShoppingList() {
       }
       return newSet;
     });
+    changedListId.current = id;
     setHasUnsavedChanges(true);
   };
 
@@ -227,12 +316,12 @@ export default function ViewShoppingList() {
 
   const getDirectProducts = (): Product[] => {
     if (hasCompanies()) return [];
-    return shoppingList?.products || [];
+    return getUniqueProducts(shoppingList?.products || []);
   };
 
   // FUNÇÃO CORRETÍSSIMA: calcula total usando SEMPRE as quantidades originais
   const calculateTotalWithOriginalQuantities = (products: CompanyProduct[]) => {
-    return products.reduce((sum, item) => {
+    return getUniqueCompanyProducts(products).reduce((sum, item) => {
       const productId = item.product.id;
       const quantity = originalQuantities.get(productId) || 1; // USA A QUANTIDADE ORIGINAL
       const price = item.average_price;
@@ -264,7 +353,7 @@ export default function ViewShoppingList() {
         group => group.products.map(p => p.product)
       );
     } else {
-      allProducts = shoppingList.products || [];
+      allProducts = getUniqueProducts(shoppingList.products || []);
     }
 
     if (allProducts.length === 0) return 0;
@@ -283,24 +372,80 @@ export default function ViewShoppingList() {
       });
       return total;
     } else {
-      return calculateDirectProductsTotal(shoppingList.products || []);
+      return calculateDirectProductsTotal(getUniqueProducts(shoppingList.products || []));
     }
   };
 
   // VALOR SEM OTIMIZAR (usa quantidades originais + preços originais de list.products)
   const getUnoptimizedTotalValue = () => {
     if (!shoppingList) return 0;
-    return calculateDirectProductsTotal(shoppingList.products || []);
+    return calculateDirectProductsTotal(getUniqueProducts(shoppingList.products || []));
+  };
+
+  const openOptimizeDialog = () => {
+    setLatitude("");
+    setLongitude("");
+    setAddressQuery("");
+    setAddressSuggestions([]);
+    setMaxDistance("25");
+    setLocationMessage("Solicitando sua localização...");
+
+    const openDialog = () => setIsOptimizeSheetOpen(true);
+    if (!navigator.geolocation) {
+      setLocationMessage("A localização não está disponível. Pesquise um endereço ou informe as coordenadas.");
+      openDialog();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLatitude(String(coords.latitude));
+        setLongitude(String(coords.longitude));
+        setLocationMessage("Localização atual preenchida automaticamente.");
+        openDialog();
+      },
+      () => {
+        setLocationMessage("A localização não foi autorizada. Pesquise um endereço ou informe as coordenadas.");
+        openDialog();
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
+  const selectAddress = (suggestion: AddressSuggestion) => {
+    skipNextAddressSearch.current = true;
+    setAddressQuery(suggestion.display_name);
+    setLatitude(suggestion.lat);
+    setLongitude(suggestion.lon);
+    setAddressSuggestions([]);
+    setLocationMessage("Coordenadas preenchidas a partir do endereço selecionado.");
   };
 
   const optimizeRoute = async () => {
     if (isOptimizing) return;
 
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    const parsedDistance = Number(maxDistance);
+    if (!latitude.trim() || !longitude.trim() ||
+      !Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90 ||
+      !Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+      setLocationMessage("Informe uma latitude e longitude válidas ou selecione um endereço.");
+      return;
+    }
+    if (!Number.isFinite(parsedDistance) || parsedDistance <= 0) {
+      setLocationMessage("A distância máxima deve ser maior que zero.");
+      return;
+    }
+
     setIsOptimizing(true);
-    setIsOptimizeSheetOpen(false);
 
     try {
-      await api.post(`/lists/${id}/optimize`, { optimized: true });
+      await api.post(`/lists/${id}/optimize`, {
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        distance: parsedDistance,
+      });
 
       const reloadResponse = await api.get(`/lists/${id}`);
       const newData = reloadResponse.data.list;
@@ -317,12 +462,21 @@ export default function ViewShoppingList() {
         products: newData.products || [],
         productsQuantity: newData.productsQuantity,
       });
+      setIsOptimizeSheetOpen(false);
 
     } catch (error) {
       console.error("Erro ao otimizar:", error);
+      setLocationMessage("Não foi possível otimizar a rota. Tente novamente.");
     } finally {
       setIsOptimizing(false);
     }
+  };
+
+  const formatDistance = (distance?: number | string) => {
+    const value = Number(distance);
+    if (!Number.isFinite(value)) return null;
+    if (value < 1) return `${Math.round(value * 1000).toLocaleString("pt-BR")} m`;
+    return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Km`;
   };
 
   const handleDelete = async () => {
@@ -475,80 +629,125 @@ export default function ViewShoppingList() {
         </div>
 
         {user.user && !isCompleted && (
-          <>
-            {/* Botão Otimizar Rota - Versão Mobile (Sheet) */}
-            <div className="lg:hidden">
-              <Sheet open={isOptimizeSheetOpen} onOpenChange={setIsOptimizeSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-md"
-                    disabled={shoppingList.optimized}
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    {shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota"}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="rounded-t-2xl">
-                  <SheetHeader>
-                    <SheetTitle className="text-left">Otimizar Rota</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-4">
-                    <div className="bg-muted p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        Ao otimizar sua rota, os produtos serão reorganizados para oferecer o menor custo total,
-                        considerando preços e localização das empresas.
-                      </p>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 sm:p-6">
+              <Button
+                onClick={openOptimizeDialog}
+                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
+                disabled={isOptimizing}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                {shoppingList.optimized ? "Re-Otimizar" : "Otimizar Rota"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <Dialog open={isOptimizeSheetOpen} onOpenChange={setIsOptimizeSheetOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{shoppingList.optimized ? "Re-Otimizar rota" : "Otimizar rota"}</DialogTitle>
+              <DialogDescription>
+                Defina o ponto de origem e a distância máxima para ordenar as empresas.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                <LocateFixed className="mr-2 inline h-4 w-4" />
+                {locationMessage}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="origin-address">Pesquisar endereço completo</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="origin-address"
+                    value={addressQuery}
+                    onChange={(event) => setAddressQuery(event.target.value)}
+                    placeholder="Rua, número, bairro, cidade e estado"
+                    className="pl-9"
+                    autoComplete="off"
+                  />
+                  {(isSearchingAddress || addressSuggestions.length > 0) && (
+                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-background shadow-lg">
+                      {isSearchingAddress ? (
+                        <p className="p-3 text-sm text-muted-foreground">Pesquisando...</p>
+                      ) : addressSuggestions.map((suggestion) => (
+                        <button
+                          type="button"
+                          key={suggestion.place_id}
+                          onClick={() => selectAddress(suggestion)}
+                          className="block w-full border-b p-3 text-left text-sm last:border-0 hover:bg-muted"
+                        >
+                          {suggestion.display_name}
+                        </button>
+                      ))}
                     </div>
-                    <Button
-                      onClick={optimizeRoute}
-                      className="w-full"
-                      disabled={isOptimizing}
-                    >
-                      {isOptimizing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Otimizando...
-                        </>
-                      ) : (
-                        <>
-                          <MapPin className="w-4 h-4 mr-2" />
-                          Confirmar Otimização
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Busca por <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline">OpenStreetMap</a>.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="origin-latitude">Latitude *</Label>
+                  <Input id="origin-latitude" type="number" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="origin-longitude">Longitude *</Label>
+                  <Input id="origin-longitude" type="number" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max-distance">Distância máxima (Km) *</Label>
+                <Input id="max-distance" type="number" min="0.1" step="0.1" value={maxDistance} onChange={(event) => setMaxDistance(event.target.value)} />
+              </div>
             </div>
 
-            {/* Botão Otimizar Rota - Versão Desktop */}
-            <div className="hidden lg:block">
-              <Card className="border-0 shadow-sm bg-white">
-                <CardContent className="p-6">
-                  <Button
-                    onClick={optimizeRoute}
-                    className="w-full bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
-                    disabled={shoppingList.optimized || isOptimizing}
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {isOptimizing ? "Otimizando..." : (shoppingList.optimized ? "Rota Otimizada" : "Otimizar Rota")}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOptimizeSheetOpen(false)} disabled={isOptimizing}>Cancelar</Button>
+              <Button onClick={optimizeRoute} disabled={isOptimizing}>
+                {isOptimizing ? "Otimizando..." : "OK"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Products List - Mantido igual */}
         <div className="space-y-6">
           {hasCompaniesData ? (
-            Object.values(shoppingList.companies as Record<string, CompanyGroup>).map((group) => {
+            Object.values(shoppingList.companies as Record<string, CompanyGroup>)
+              .sort((a, b) => {
+                const aIsTooFar = a.isTooFar ?? a.company.isTooFar ?? false;
+                const bIsTooFar = b.isTooFar ?? b.company.isTooFar ?? false;
+
+                if (aIsTooFar !== bIsTooFar) return aIsTooFar ? 1 : -1;
+
+                const aDistance = Number(a.distance ?? a.company.distance);
+                const bDistance = Number(b.distance ?? b.company.distance);
+                const safeADistance = Number.isFinite(aDistance) ? aDistance : Number.POSITIVE_INFINITY;
+                const safeBDistance = Number.isFinite(bDistance) ? bDistance : Number.POSITIVE_INFINITY;
+
+                return safeADistance - safeBDistance;
+              })
+              .map((group) => {
               const companyTotal = calculateTotalWithOriginalQuantities(group.products);
-              const companyCompleted = calculateCompletedCount(group.products);
+              const companyProducts = getUniqueCompanyProducts(group.products);
+              const companyCompleted = calculateCompletedCount(companyProducts);
+              const isTooFar = group.isTooFar ?? group.company.isTooFar ?? false;
+              const companyDistance = formatDistance(group.distance ?? group.company.distance);
 
               return (
-                <Card key={group.company.id} className="border-0 shadow-lg overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b">
+                <Card
+                  key={group.company.id}
+                  className={`border-0 shadow-lg overflow-hidden transition-colors ${isTooFar ? "bg-slate-100/80 text-slate-500 grayscale-[35%]" : "bg-white"}`}
+                >
+                  <CardHeader className={isTooFar ? "bg-slate-200/70 border-b border-slate-300" : "bg-gradient-to-r from-slate-50 to-white border-b"}>
                     <CardTitle className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -556,6 +755,12 @@ export default function ViewShoppingList() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold">{group.company.name}</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {companyDistance && (
+                              <span className="text-sm font-medium">{companyDistance}</span>
+                            )}
+                            {isTooFar && <Badge variant="outline">Além da distância máxima</Badge>}
+                          </div>
                           {group.company.address && (
                             <>
                               {group.company.address.geocode_status === 'done' && (
@@ -574,58 +779,31 @@ export default function ViewShoppingList() {
                         </div>
                       </div>
                       <Badge variant="secondary" className="text-sm">
-                        {companyCompleted}/{group.products.length} concluídos
+                        {companyCompleted}/{companyProducts.length} concluídos
                       </Badge>
                     </CardTitle>
                   </CardHeader>
 
                   <CardContent className="p-6 space-y-3">
-                    {group.products.map((item) => {
+                    {companyProducts.map((item) => {
                       const product = item.product;
                       const unity = getProductUnity(product);
                       const category = getProductCategory(product);
                       const quantity = originalQuantities.get(product.id) || getProductQuantity(product);
 
                       return (
-                        <div
+                        <ShoppingListProductRow
                           key={product.id}
-                          className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
-                            ? 'bg-gray-50 opacity-75'
-                            : 'bg-white hover:shadow-md border border-gray-100'
-                            }`}
-                        >
-                          {!isCompleted && (
-                            <Checkbox
-                              checked={completedItems.has(product.id)}
-                              onCheckedChange={() => toggleItemComplete(product.id)}
-                              className="flex-shrink-0"
-                            />
-                          )}
-
-                          <div className="flex-1 min-w-0">
-                            <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
-                              }`}>
-                              {product.name}
-                            </h4>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="text-sm text-muted-foreground">
-                                {quantity} {unity}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {category}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-primary">
-                              R$ {(item.average_price * quantity).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              R$ {item.average_price.toFixed(2)}/{unity}
-                            </p>
-                          </div>
-                        </div>
+                          name={product.name}
+                          image={product.img}
+                          quantity={quantity}
+                          unity={unity}
+                          category={category}
+                          unitPrice={item.average_price}
+                          completed={completedItems.has(product.id)}
+                          canComplete={!isCompleted}
+                          onToggleComplete={() => toggleItemComplete(product.id)}
+                        />
                       );
                     })}
 
@@ -657,45 +835,18 @@ export default function ViewShoppingList() {
                   const quantity = getProductQuantity(product);
 
                   return (
-                    <div
+                    <ShoppingListProductRow
                       key={product.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${completedItems.has(product.id)
-                        ? 'bg-gray-50 opacity-75'
-                        : 'bg-white hover:shadow-md border border-gray-100'
-                        }`}
-                    >
-                      {!isCompleted && (
-                        <Checkbox
-                          checked={completedItems.has(product.id)}
-                          onCheckedChange={() => toggleItemComplete(product.id)}
-                          className="flex-shrink-0"
-                        />
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-semibold truncate ${completedItems.has(product.id) ? 'line-through text-muted-foreground' : ''
-                          }`}>
-                          {product.name}
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-sm text-muted-foreground">
-                            {quantity} {unity}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {category}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-primary">
-                          R$ {((product.average_price || 0) * quantity).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          R$ {(product.average_price || 0).toFixed(2)}/{unity}
-                        </p>
-                      </div>
-                    </div>
+                      name={product.name}
+                      image={product.img}
+                      quantity={quantity}
+                      unity={unity}
+                      category={category}
+                      unitPrice={product.average_price || 0}
+                      completed={completedItems.has(product.id)}
+                      canComplete={!isCompleted}
+                      onToggleComplete={() => toggleItemComplete(product.id)}
+                    />
                   );
                 })}
 
