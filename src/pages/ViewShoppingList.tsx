@@ -107,6 +107,7 @@ export default function ViewShoppingList() {
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const skipNextAddressSearch = useRef(false);
+  const changedListId = useRef<string | undefined>(undefined);
   const user = useUser();
 
   useEffect(() => {
@@ -168,6 +169,22 @@ export default function ViewShoppingList() {
     return product.quantity || product.unity_quantity || 1;
   };
 
+  const getUniqueProducts = (products: Product[]): Product[] => {
+    const uniqueProducts = new Map<number, Product>();
+    products.forEach((product) => {
+      if (!uniqueProducts.has(product.id)) uniqueProducts.set(product.id, product);
+    });
+    return Array.from(uniqueProducts.values());
+  };
+
+  const getUniqueCompanyProducts = (products: CompanyProduct[]): CompanyProduct[] => {
+    const uniqueProducts = new Map<number, CompanyProduct>();
+    products.forEach((item) => {
+      if (!uniqueProducts.has(item.product.id)) uniqueProducts.set(item.product.id, item);
+    });
+    return Array.from(uniqueProducts.values());
+  };
+
   const handleCompleteList = async () => {
     const response = await api.put(`/lists/${id}`, {
       status: 'completed'
@@ -182,10 +199,10 @@ export default function ViewShoppingList() {
     setIsRecreating(true);
 
     try {
-      const products = (shoppingList.products || []).map(product => ({
-        product,
-        quantity: getProductQuantity(product),
-        unity: getProductUnity(product),
+      const uniqueProducts = getUniqueProducts(shoppingList.products || []);
+      const products = uniqueProducts.map(product => ({
+        product: { id: product.id },
+        quantity: originalQuantities.get(product.id) ?? getProductQuantity(product),
       }));
 
       const response = await api.post("/lists", {
@@ -211,6 +228,9 @@ export default function ViewShoppingList() {
     const loadData = async () => {
       try {
         setLoading(true);
+        changedListId.current = undefined;
+        setHasUnsavedChanges(false);
+        setCompletedItems(new Set());
         const response = await api.get(`/lists/${id}`);
         const data = response.data.list;
 
@@ -255,13 +275,14 @@ export default function ViewShoppingList() {
   }, [id]);
 
   const saveCompletedItems = useCallback(async () => {
-    if (!hasUnsavedChanges) return;
+    if (!hasUnsavedChanges || !id || changedListId.current !== id) return;
 
     try {
       await api.put(`/listItems/${id}`, {
         completed_items: Array.from(completedItems)
       });
       setHasUnsavedChanges(false);
+      changedListId.current = undefined;
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
@@ -283,6 +304,7 @@ export default function ViewShoppingList() {
       }
       return newSet;
     });
+    changedListId.current = id;
     setHasUnsavedChanges(true);
   };
 
@@ -294,12 +316,12 @@ export default function ViewShoppingList() {
 
   const getDirectProducts = (): Product[] => {
     if (hasCompanies()) return [];
-    return shoppingList?.products || [];
+    return getUniqueProducts(shoppingList?.products || []);
   };
 
   // FUNÇÃO CORRETÍSSIMA: calcula total usando SEMPRE as quantidades originais
   const calculateTotalWithOriginalQuantities = (products: CompanyProduct[]) => {
-    return products.reduce((sum, item) => {
+    return getUniqueCompanyProducts(products).reduce((sum, item) => {
       const productId = item.product.id;
       const quantity = originalQuantities.get(productId) || 1; // USA A QUANTIDADE ORIGINAL
       const price = item.average_price;
@@ -331,7 +353,7 @@ export default function ViewShoppingList() {
         group => group.products.map(p => p.product)
       );
     } else {
-      allProducts = shoppingList.products || [];
+      allProducts = getUniqueProducts(shoppingList.products || []);
     }
 
     if (allProducts.length === 0) return 0;
@@ -350,14 +372,14 @@ export default function ViewShoppingList() {
       });
       return total;
     } else {
-      return calculateDirectProductsTotal(shoppingList.products || []);
+      return calculateDirectProductsTotal(getUniqueProducts(shoppingList.products || []));
     }
   };
 
   // VALOR SEM OTIMIZAR (usa quantidades originais + preços originais de list.products)
   const getUnoptimizedTotalValue = () => {
     if (!shoppingList) return 0;
-    return calculateDirectProductsTotal(shoppingList.products || []);
+    return calculateDirectProductsTotal(getUniqueProducts(shoppingList.products || []));
   };
 
   const openOptimizeDialog = () => {
@@ -701,7 +723,8 @@ export default function ViewShoppingList() {
           {hasCompaniesData ? (
             Object.values(shoppingList.companies as Record<string, CompanyGroup>).map((group) => {
               const companyTotal = calculateTotalWithOriginalQuantities(group.products);
-              const companyCompleted = calculateCompletedCount(group.products);
+              const companyProducts = getUniqueCompanyProducts(group.products);
+              const companyCompleted = calculateCompletedCount(companyProducts);
               const isTooFar = group.isTooFar ?? group.company.isTooFar ?? false;
               const companyDistance = formatDistance(group.distance ?? group.company.distance);
 
@@ -742,13 +765,13 @@ export default function ViewShoppingList() {
                         </div>
                       </div>
                       <Badge variant="secondary" className="text-sm">
-                        {companyCompleted}/{group.products.length} concluídos
+                        {companyCompleted}/{companyProducts.length} concluídos
                       </Badge>
                     </CardTitle>
                   </CardHeader>
 
                   <CardContent className="p-6 space-y-3">
-                    {group.products.map((item) => {
+                    {companyProducts.map((item) => {
                       const product = item.product;
                       const unity = getProductUnity(product);
                       const category = getProductCategory(product);
