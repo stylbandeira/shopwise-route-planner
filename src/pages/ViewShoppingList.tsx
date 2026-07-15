@@ -721,7 +721,21 @@ export default function ViewShoppingList() {
         {/* Products List - Mantido igual */}
         <div className="space-y-6">
           {hasCompaniesData ? (
-            Object.values(shoppingList.companies as Record<string, CompanyGroup>).map((group) => {
+            Object.values(shoppingList.companies as Record<string, CompanyGroup>)
+              .sort((a, b) => {
+                const aIsTooFar = a.isTooFar ?? a.company.isTooFar ?? false;
+                const bIsTooFar = b.isTooFar ?? b.company.isTooFar ?? false;
+
+                if (aIsTooFar !== bIsTooFar) return aIsTooFar ? 1 : -1;
+
+                const aDistance = Number(a.distance ?? a.company.distance);
+                const bDistance = Number(b.distance ?? b.company.distance);
+                const safeADistance = Number.isFinite(aDistance) ? aDistance : Number.POSITIVE_INFINITY;
+                const safeBDistance = Number.isFinite(bDistance) ? bDistance : Number.POSITIVE_INFINITY;
+
+                return safeADistance - safeBDistance;
+              })
+              .map((group) => {
               const companyTotal = calculateTotalWithOriginalQuantities(group.products);
               const companyProducts = getUniqueCompanyProducts(group.products);
               const companyCompleted = calculateCompletedCount(companyProducts);
