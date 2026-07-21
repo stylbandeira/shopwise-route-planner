@@ -86,10 +86,11 @@ export default function ManageCompanies({ endpoint }: Props) {
         }
     }
 
+    const normalizedSearch = search.toLowerCase();
     const filteredCompanies = companies.filter(company => {
-        const matchesSearch = company.name.toLowerCase().includes(search.toLowerCase()) ||
-            company.email.toLowerCase().includes(search.toLowerCase()) ||
-            company.cnpj.includes(search);
+        const matchesSearch = (company.name ?? '').toLowerCase().includes(normalizedSearch) ||
+            (company.email ?? '').toLowerCase().includes(normalizedSearch) ||
+            (company.cnpj ?? '').includes(search);
         const matchesStatus = filterStatus === "all" || company.status === filterStatus;
 
         return matchesSearch && matchesStatus;
