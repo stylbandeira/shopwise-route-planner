@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Upload, Camera, AlertCircle, QrCode } from "lucide-react";
+import { Upload, Camera, AlertCircle, QrCode } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import jsQR from 'jsqr';
 import api from "@/lib/api";
@@ -424,20 +424,8 @@ export function QRCodeModal({ isOpen, onClose, onSuccess, onError }: QRCodeModal
         }}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center justify-between">
+                    <DialogTitle>
                         <span>Escanear QR Code</span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                                stopCamera();
-                                onClose();
-                            }}
-                            className="h-8 w-8 p-0"
-                            disabled={loading}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
                     </DialogTitle>
                 </DialogHeader>
 

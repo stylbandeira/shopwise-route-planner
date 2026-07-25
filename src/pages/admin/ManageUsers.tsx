@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { StandardDialog } from "@/components/ui/standard-dialog";
 import { CustomPagination } from "@/components/oiai_ui/CustomPagination";
 import { User } from "@/types/user";
 
@@ -305,13 +305,41 @@ export default function ManageUsers() {
         )}
       </Card>
 
-      <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
-        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-lg sm:right-0 sm:top-0 sm:bottom-auto rounded-t-2xl sm:rounded-none">
-          <SheetHeader>
-            <SheetTitle>Detalhes do Usuário</SheetTitle>
-          </SheetHeader>
-          {selectedUser && (
-            <div className="mt-6 space-y-4">
+      <StandardDialog
+        open={!!selectedUser}
+        onOpenChange={(open) => {
+          if (!open) setSelectedUser(null);
+        }}
+        title="Detalhes do Usuário"
+        actions={selectedUser && (
+          <>
+            <Button
+              className="flex-1"
+              onClick={() => navigate(`/admin/users/edit/${selectedUser.id}`)}
+              disabled={!!selectedUser.deleted_at}
+            >
+              <Edit3 className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => {
+                handleDelete(selectedUser);
+                setSelectedUser(null);
+              }}
+            >
+              {selectedUser.deleted_at ? (
+                <><ArchiveRestore className="w-4 h-4 mr-2" /> Restaurar</>
+              ) : (
+                <><Trash2 className="w-4 h-4 mr-2" /> Excluir</>
+              )}
+            </Button>
+          </>
+        )}
+      >
+        {selectedUser && (
+            <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 flex-shrink-0">
                   <AvatarFallback className={getTypeColor(selectedUser.type)}>
@@ -367,34 +395,9 @@ export default function ManageUsers() {
                 </div>
               </div>
 
-              <div className="border-t pt-4 flex flex-col sm:flex-row gap-2">
-                <Button
-                  className="flex-1"
-                  onClick={() => navigate(`/admin/users/edit/${selectedUser.id}`)}
-                  disabled={!!selectedUser.deleted_at}
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Editar
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => {
-                    handleDelete(selectedUser);
-                    setSelectedUser(null);
-                  }}
-                >
-                  {selectedUser.deleted_at ? (
-                    <><ArchiveRestore className="w-4 h-4 mr-2" /> Restaurar</>
-                  ) : (
-                    <><Trash2 className="w-4 h-4 mr-2" /> Excluir</>
-                  )}
-                </Button>
-              </div>
             </div>
-          )}
-        </SheetContent>
-      </Sheet>
+        )}
+      </StandardDialog>
     </div>
   );
 }

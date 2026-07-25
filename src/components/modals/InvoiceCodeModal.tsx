@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, AlertCircle, QrCode } from "lucide-react";
+import { AlertCircle, QrCode } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import api from "@/lib/api";
 
@@ -69,20 +69,11 @@ export function InvoiceCodeModal({ isOpen, onClose, onSuccess, onError }: Invoic
         }}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center justify-between">
+                    <DialogTitle>
                         <div className="flex items-center gap-2">
                             <QrCode className="h-5 w-5" />
                             <span>Inserir Código da Nota Fiscal</span>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleClose}
-                            className="h-8 w-8 p-0"
-                            disabled={loading}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
                     </DialogTitle>
                 </DialogHeader>
 

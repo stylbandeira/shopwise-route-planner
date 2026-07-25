@@ -27,7 +27,7 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
 import { StatsCards } from "@/components/admin/StatsCards";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { StandardDialog } from "@/components/ui/standard-dialog";
 
 interface Product {
   id: number;
@@ -594,14 +594,25 @@ export default function ManageProducts() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Product Details Sheet */}
-      <Sheet open={!!selectedProductDetail} onOpenChange={() => setSelectedProductDetail(null)}>
-        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-lg sm:right-0 sm:top-0 sm:bottom-auto rounded-t-2xl sm:rounded-none">
-          <SheetHeader>
-            <SheetTitle>Detalhes do Produto</SheetTitle>
-          </SheetHeader>
-          {selectedProductDetail && (
-            <div className="mt-6 space-y-4">
+      <StandardDialog
+        open={!!selectedProductDetail}
+        onOpenChange={(open) => {
+          if (!open) setSelectedProductDetail(null);
+        }}
+        title="Detalhes do Produto"
+        actions={selectedProductDetail && (
+          <>
+            <Button className="flex-1" onClick={() => navigate(`/admin/products/edit/${selectedProductDetail.id}`)}>
+              <Edit3 className="w-4 h-4 mr-2" /> Editar
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => handleDelete(selectedProductDetail.id)}>
+              <Trash2 className="w-4 h-4 mr-2" /> Excluir
+            </Button>
+          </>
+        )}
+      >
+        {selectedProductDetail && (
+            <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 rounded-md overflow-hidden bg-gray-100 border flex-shrink-0">
                   {selectedProductDetail.img ? (
@@ -661,18 +672,9 @@ export default function ManageProducts() {
                 </div>
               </div>
 
-              <div className="border-t pt-4 flex gap-2">
-                <Button className="flex-1" onClick={() => navigate(`/admin/products/edit/${selectedProductDetail.id}`)}>
-                  <Edit3 className="w-4 h-4 mr-2" /> Editar
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => handleDelete(selectedProductDetail.id)}>
-                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                </Button>
-              </div>
             </div>
-          )}
-        </SheetContent>
-      </Sheet>
+        )}
+      </StandardDialog>
     </div>
   );
 }
